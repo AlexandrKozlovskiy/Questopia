@@ -16,7 +16,6 @@ public interface LibQspCallbacks {
     String InputBox(String prompt);
     int GetMSCount();
     void AddMenuItem(String name, String imgPath);
-    void ShowMenu();
     void DeleteMenu();
     void Wait(int msecs);
     void ShowWindow(int type, boolean isShow);

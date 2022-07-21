@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2010 Valeriy Argunov (nporep AT mail DOT ru) */
+/* Copyright (C) 2001-2020 Valeriy Argunov (byte AT qsp DOT org) */
 /*
 * This library is free software; you can redistribute it and/or modify
 * it under the terms of the GNU Lesser General Public License as published by
@@ -23,26 +23,30 @@
 
 	#define QSP_OPSLEVELS 2
 	#define QSP_MAXOPSNAMES 100
-	#define QSP_OPMAXARGS 10
+	#define QSP_OPMAXARGS 20
 	#define QSP_STACKSIZE 30
-	#define QSP_MAXITEMS 100
+	#define QSP_MAXITEMS 200
+	#define QSP_VALSDELIM QSP_FMT("\x1F")
 
-	typedef void (*QSP_FUNCTION)(QSPVariant *, int, QSPVariant *);
+	/* Helpers */
+	#define QSP_TOBOOL(x) ((x) != 0) /* converts a number to a QSP boolean value */
+	#define QSP_ISTRUE(x) ((x) != 0) /* checks whether a QSP numeric value represents boolean 'true' */
+
+	typedef void (*QSP_FUNCTION)(QSPVariant *, QSP_TINYINT, QSPVariant *);
 
 	typedef struct
 	{
-		int Code;
-		QSP_CHAR *Name;
-		int NameLen;
+		QSP_TINYINT Code;
+		QSPString Name;
 	} QSPMathOpName;
 
 	typedef struct
 	{
-		int Priority;
-		int ResType;
-		int MinArgsCount;
-		int MaxArgsCount;
-		int ArgsTypes[QSP_OPMAXARGS];
+		QSP_TINYINT Priority;
+		QSP_TINYINT ResType;
+		QSP_TINYINT MinArgsCount;
+		QSP_TINYINT MaxArgsCount;
+		QSP_TINYINT ArgsTypes[QSP_OPMAXARGS];
 		QSP_FUNCTION Func;
 	} QSPMathOperation;
 
@@ -52,10 +56,13 @@
 		qspOpStart,
 		qspOpEnd,
 		qspOpValue,
+		qspOpValueToFormat,
+		qspOpOpenArrBracket,
+		qspOpCloseArrBracket,
 		qspOpOpenBracket,
-		qspOpMinus,
-		qspOpComma,
 		qspOpCloseBracket,
+		qspOpNegation,
+		qspOpComma,
 		qspOpMul,
 		qspOpDiv,
 		qspOpAdd,
@@ -72,7 +79,9 @@
 		qspOpAppend,
 
 		qspOpFirst_Function,
-		qspOpNot = qspOpFirst_Function,
+		qspOpArrItem = qspOpFirst_Function,
+		qspOpLastArrItem,
+		qspOpNot,
 		qspOpLoc,
 		qspOpObj,
 		qspOpMin,
@@ -119,6 +128,6 @@
 
 	/* External functions */
 	void qspInitMath();
-	QSPVariant qspExprValue(QSP_CHAR *);
+	QSPVariant qspExprValue(QSPString expr);
 
 #endif

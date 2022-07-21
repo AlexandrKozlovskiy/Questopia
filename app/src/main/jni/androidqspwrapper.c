@@ -4,6 +4,7 @@
 #include "jni.h"
 
 #include "qsp/bindings/android/android.h"
+#include "qsp/headers/text.h"
 
 JNIEnv *qspJniEnv;
 jobject qspCallbacksObj;
@@ -30,7 +31,7 @@ void Java_com_qsp_player_model_libQSP_NativeMethods_QSPDeInit(JNIEnv *env,
 
 jboolean Java_com_qsp_player_model_libQSP_NativeMethods_QSPIsInCallBack(JNIEnv *env,
                                                                         jobject this) {
-    return QSPIsInCallBack();
+    return qspIsInCallBack();
 }
 
 void Java_com_qsp_player_model_libQSP_NativeMethods_QSPEnableDebugMode(JNIEnv *env,
@@ -39,17 +40,18 @@ void Java_com_qsp_player_model_libQSP_NativeMethods_QSPEnableDebugMode(JNIEnv *e
     QSPEnableDebugMode((QSP_BOOL) isDebug);
 }
 
-jobject
-Java_com_qsp_player_model_libQSP_NativeMethods_QSPGetCurStateData(JNIEnv *env,
-                                                                  jobject this) {
-    //!!!STUB
-    //QSPGetCurStateData(jstring *loc, (int *)actIndex, (int *)line);
+jobject Java_com_qsp_player_model_libQSP_NativeMethods_QSPGetCurStateData(JNIEnv *env,
+                                                                  jobject this,
+                                                                  jstring loc,
+                                                                  jint actIndex,
+                                                                  jint line) {
+    QSPGetCurStateData(loc, actIndex, line);
     return NULL;
 }
 
 jstring Java_com_qsp_player_model_libQSP_NativeMethods_QSPGetVersion(JNIEnv *env,
                                                                      jobject this) {
-    char *sz = qspW2C(QSPGetVersion());
+    char *sz = qspW2C(qspStringToC(QSPGetVersion()));
     jstring result = (*env)->NewStringUTF(env, sz);
     if (sz != NULL)
         free(sz);
@@ -58,32 +60,9 @@ jstring Java_com_qsp_player_model_libQSP_NativeMethods_QSPGetVersion(JNIEnv *env
 
 
 ///* Количество полных обновлений локаций */
-jint
-Java_com_qsp_player_model_libQSP_NativeMethods_QSPGetFullRefreshCount(JNIEnv *env,
+jint Java_com_qsp_player_model_libQSP_NativeMethods_QSPGetFullRefreshCount(JNIEnv *env,
                                                                       jobject this) {
     return QSPGetFullRefreshCount();
-}
-
-///* ------------------------------------------------------------ */
-///* Полный путь к загруженному файлу игры */
-jstring Java_com_qsp_player_model_libQSP_NativeMethods_QSPGetQstFullPath(JNIEnv *env,
-                                                                         jobject this) {
-    char *sz = qspW2C(QSPGetQstFullPath());
-    jstring result = (*env)->NewStringUTF(env, sz);
-    if (sz != NULL)
-        free(sz);
-    return result;
-}
-
-///* ------------------------------------------------------------ */
-///* Название текущей локации */
-jstring Java_com_qsp_player_model_libQSP_NativeMethods_QSPGetCurLoc(JNIEnv *env,
-                                                                    jobject this) {
-    char *sz = qspW2C(QSPGetCurLoc());
-    jstring result = (*env)->NewStringUTF(env, sz);
-    if (sz != NULL)
-        free(sz);
-    return result;
 }
 
 ///* ------------------------------------------------------------ */
@@ -92,7 +71,7 @@ jstring Java_com_qsp_player_model_libQSP_NativeMethods_QSPGetCurLoc(JNIEnv *env,
 ///* Текст основного окна описания локации */
 jstring Java_com_qsp_player_model_libQSP_NativeMethods_QSPGetMainDesc(JNIEnv *env,
                                                                       jobject this) {
-    char *sz = qspW2C(QSPGetMainDesc());
+    char *sz = qspW2C(qspStringToC(QSPGetMainDesc()));
     jstring result = (*env)->NewStringUTF(env, sz);
     if (sz != NULL)
         free(sz);
@@ -100,8 +79,7 @@ jstring Java_com_qsp_player_model_libQSP_NativeMethods_QSPGetMainDesc(JNIEnv *en
 }
 
 ///* Возможность изменения текста основного описания */
-jboolean
-Java_com_qsp_player_model_libQSP_NativeMethods_QSPIsMainDescChanged(JNIEnv *env,
+jboolean Java_com_qsp_player_model_libQSP_NativeMethods_QSPIsMainDescChanged(JNIEnv *env,
                                                                     jobject this) {
     return QSPIsMainDescChanged();
 }
@@ -112,7 +90,7 @@ Java_com_qsp_player_model_libQSP_NativeMethods_QSPIsMainDescChanged(JNIEnv *env,
 ///* Текст дополнительного окна описания локации */
 jstring Java_com_qsp_player_model_libQSP_NativeMethods_QSPGetVarsDesc(JNIEnv *env,
                                                                       jobject this) {
-    char *sz = qspW2C(QSPGetVarsDesc());
+    char *sz = qspW2C(qspStringToC(QSPGetVarsDesc()));
     jstring result = (*env)->NewStringUTF(env, sz);
     if (sz != NULL)
         free(sz);
@@ -164,14 +142,19 @@ void Java_com_qsp_player_model_libQSP_NativeMethods_QSPSetInputStrText(JNIEnv *e
         return;
     QSP_CHAR *strConverted = qspC2W(str);
 
-    QSPSetInputStrText(strConverted);
+    QSPSetInputStrText(qspStringFromC(strConverted));
 
     (*env)->ReleaseStringUTFChars(env, val, str);
 }
 
 ///* ------------------------------------------------------------ */
 ///* Список действий */
-//
+jint Java_com_qsp_player_model_libQSP_NativeMethods_QSPGetActions(JNIEnv *env,
+                                                                  jobject this,
+                                                                  jobject qspListItem,
+                                                                  jint itemsBufSize) {
+    return QSPGetActions(&qspListItem, itemsBufSize);
+}
 ///* Количество действий */
 jint Java_com_qsp_player_model_libQSP_NativeMethods_QSPGetActionsCount(JNIEnv *env,
                                                                        jobject this) {
@@ -183,12 +166,11 @@ jint Java_com_qsp_player_model_libQSP_NativeMethods_QSPGetActionsCount(JNIEnv *e
 jobject Java_com_qsp_player_model_libQSP_NativeMethods_QSPGetActionData(JNIEnv *env,
                                                                         jobject this,
                                                                         jint ind) {
-    char *qspImgFileName;
-    char *qspActName;
-    QSPGetActionData(ind, &qspImgFileName, &qspActName);
+    QSPListItem qspListItem;
+    QSPGetObjects(&qspListItem, ind);
 
-    char *sz = qspW2C(qspActName);
-    char *isz = qspW2C(qspImgFileName);
+    char *sz = qspW2C(qspStringToC(qspListItem.Name));
+    char *isz = qspW2C(qspStringToC(qspListItem.Image));
     jstring actName = (*env)->NewStringUTF(env, sz);
     jstring actImg = (*env)->NewStringUTF(env, isz);
     if (sz != NULL)
@@ -212,8 +194,7 @@ jobject Java_com_qsp_player_model_libQSP_NativeMethods_QSPGetActionData(JNIEnv *
 }
 
 ///* Выполнение кода выбранного действия */
-jboolean
-Java_com_qsp_player_model_libQSP_NativeMethods_QSPExecuteSelActionCode(JNIEnv *env,
+jboolean Java_com_qsp_player_model_libQSP_NativeMethods_QSPExecuteSelActionCode(JNIEnv *env,
                                                                        jobject this,
                                                                        jboolean isRefresh) {
     return QSPExecuteSelActionCode((QSP_BOOL) isRefresh);
@@ -242,7 +223,12 @@ Java_com_qsp_player_model_libQSP_NativeMethods_QSPIsActionsChanged(JNIEnv *env,
 
 ///* ------------------------------------------------------------ */
 ///* Список объектов */
-//
+jint Java_com_qsp_player_model_libQSP_NativeMethods_QSPGetObjects(JNIEnv *env,
+                                                                  jobject this,
+                                                                  jobject qspListItem,
+                                                                  jint itemsBufSize) {
+    return QSPGetObjects(&qspListItem, itemsBufSize);
+}
 ///* Количество объектов */
 jint Java_com_qsp_player_model_libQSP_NativeMethods_QSPGetObjectsCount(JNIEnv *env,
                                                                        jobject this) {
@@ -254,16 +240,15 @@ jint Java_com_qsp_player_model_libQSP_NativeMethods_QSPGetObjectsCount(JNIEnv *e
 jobject Java_com_qsp_player_model_libQSP_NativeMethods_QSPGetObjectData(JNIEnv *env,
                                                                         jobject this,
                                                                         jint ind) {
-    char *qspImgFileName;
-    char *qspObjName;
-    QSPGetObjectData(ind, &qspImgFileName, &qspObjName);
+    QSPListItem qspListItem;
+    QSPGetObjects(&qspListItem, ind);
 
-    char *sz = qspW2C(qspObjName);
+    char *sz = qspW2C(qspStringToC(qspListItem.Name));
     jstring objName = (*env)->NewStringUTF(env, sz);
     if (sz != NULL)
         free(sz);
 
-    char *isz = qspW2C(qspImgFileName);
+    char *isz = qspW2C(qspStringToC(qspListItem.Image));
     jstring objImg = (*env)->NewStringUTF(env, isz);
     if (isz != NULL)
         free(isz);
@@ -349,11 +334,12 @@ jobject Java_com_qsp_player_model_libQSP_NativeMethods_QSPGetVarValues(JNIEnv *e
     if (str == NULL)
         return NULL;
     QSP_CHAR *strConverted = qspC2W(str);
+    QSPString qspString = qspStringFromC(strConverted);
 
     //Call QSP function
     int numVal = 0;
     char *strVal;
-    QSP_BOOL result = QSPGetVarValues(strConverted, (int) ind, &numVal, &strVal);
+    QSP_BOOL result = QSPGetVarValues(qspString, (int) ind, &numVal, &strVal);
 
     // Attempt to find the GetVarValuesResponse class.
     jclass clazz = (*env)->FindClass(env, "com/qsp/player/dto/libQSP/GetVarValuesResponse");
@@ -416,17 +402,17 @@ Java_com_qsp_player_model_libQSP_NativeMethods_QSPGetVarNameByIndex(JNIEnv *env,
 ///* Выполнение кода */
 //
 ///* Выполнение строки кода */
-jboolean
-Java_com_qsp_player_model_libQSP_NativeMethods_QSPExecString(JNIEnv *env,
-                                                             jobject this,
-                                                             jstring s,
-                                                             jboolean isRefresh) {
+jboolean Java_com_qsp_player_model_libQSP_NativeMethods_QSPExecString(JNIEnv *env,
+                                                                      jobject this,
+                                                                      jstring s,
+                                                                      jboolean isRefresh) {
     const char *str = (*env)->GetStringUTFChars(env, s, NULL);
     if (str == NULL)
         return JNI_FALSE;
     QSP_CHAR *strConverted = qspC2W(str);
+    QSPString qspString = qspStringFromC(strConverted);
 
-    jboolean result = QSPExecString(strConverted, (QSP_BOOL) isRefresh);
+    jboolean result = QSPExecString(qspString, (QSP_BOOL) isRefresh);
 
     (*env)->ReleaseStringUTFChars(env, s, str);
     return result;
@@ -442,8 +428,9 @@ Java_com_qsp_player_model_libQSP_NativeMethods_QSPExecLocationCode(JNIEnv *env,
     if (str == NULL)
         return JNI_FALSE;
     QSP_CHAR *strConverted = qspC2W(str);
+    QSPString qspString = qspStringFromC(strConverted);
 
-    jboolean result = QSPExecLocationCode(strConverted, (QSP_BOOL) isRefresh);
+    jboolean result = QSPExecLocationCode(qspString, (QSP_BOOL) isRefresh);
 
     (*env)->ReleaseStringUTFChars(env, name, str);
     return result;
@@ -505,7 +492,7 @@ Java_com_qsp_player_model_libQSP_NativeMethods_QSPGetLastErrorData(JNIEnv *env,
 jstring Java_com_qsp_player_model_libQSP_NativeMethods_QSPGetErrorDesc(JNIEnv *env,
                                                                        jobject this,
                                                                       jint errorNum) {
-    char *sz = qspW2C(QSPGetErrorDesc(errorNum));
+    char *sz = qspW2C(qspStringToC(QSPGetErrorDesc(errorNum)));
     jstring result = (*env)->NewStringUTF(env, sz);
     if (sz != NULL)
         free(sz);
@@ -515,20 +502,6 @@ jstring Java_com_qsp_player_model_libQSP_NativeMethods_QSPGetErrorDesc(JNIEnv *e
 ///* ------------------------------------------------------------ */
 ///* Управление игрой */
 //
-///* Загрузка новой игры из файла */
-jboolean Java_com_qsp_player_model_libQSP_NativeMethods_QSPLoadGameWorld(JNIEnv *env,
-                                                                         jobject this,
-                                                                        jstring fileName) {
-    const char *str = (*env)->GetStringUTFChars(env, fileName, NULL);
-    if (str == NULL)
-        return JNI_FALSE;
-
-    jboolean result = QSPLoadGameWorld(str);
-
-    (*env)->ReleaseStringUTFChars(env, fileName, str);
-    return result;
-}
-
 ///* Загрузка новой игры из памяти */
 jboolean
 Java_com_qsp_player_model_libQSP_NativeMethods_QSPLoadGameWorldFromData(JNIEnv *env,
@@ -565,24 +538,8 @@ Java_com_qsp_player_model_libQSP_NativeMethods_QSPLoadGameWorldFromData(JNIEnv *
     return result;
 }
 
-///* Сохранение состояния в файл */
-jboolean Java_com_qsp_player_model_libQSP_NativeMethods_QSPSaveGame(JNIEnv *env,
-                                                                    jobject this,
-                                                                    jstring fileName,
-                                                                    jboolean isRefresh) {
-    const char *str = (*env)->GetStringUTFChars(env, fileName, NULL);
-    if (str == NULL)
-        return JNI_FALSE;
-
-    jboolean result = QSPSaveGame(str, (QSP_BOOL) isRefresh);
-
-    (*env)->ReleaseStringUTFChars(env, fileName, str);
-    return result;
-}
-
 ///* Сохранение состояния в память */
-jbyteArray
-Java_com_qsp_player_model_libQSP_NativeMethods_QSPSaveGameAsData(JNIEnv *env,
+jbyteArray Java_com_qsp_player_model_libQSP_NativeMethods_QSPSaveGameAsData(JNIEnv *env,
                                                                  jobject this,
                                                                  jboolean isRefresh) {
     void *buffer = NULL;
@@ -600,28 +557,12 @@ Java_com_qsp_player_model_libQSP_NativeMethods_QSPSaveGameAsData(JNIEnv *env,
     return result;
 }
 
-///* Загрузка состояния из файла */
-jboolean Java_com_qsp_player_model_libQSP_NativeMethods_QSPOpenSavedGame(JNIEnv *env,
-                                                                         jobject this,
-                                                                         jstring fileName,
-                                                                         jboolean isRefresh) {
-    const char *str = (*env)->GetStringUTFChars(env, fileName, NULL);
-    if (str == NULL)
-        return JNI_FALSE;
-
-    jboolean result = QSPOpenSavedGame(str, (QSP_BOOL) isRefresh);
-
-    (*env)->ReleaseStringUTFChars(env, fileName, str);
-    return result;
-}
-
 ///* Загрузка состояния из памяти */
-jboolean
-Java_com_qsp_player_model_libQSP_NativeMethods_QSPOpenSavedGameFromData(JNIEnv *env,
-                                                                        jobject this,
-                                                                        jbyteArray data,
-                                                                        jint dataSize,
-                                                                        jboolean isRefresh) {
+jboolean Java_com_qsp_player_model_libQSP_NativeMethods_QSPOpenSavedGameFromData(JNIEnv *env,
+                                                                                jobject this,
+                                                                                jbyteArray data,
+                                                                                jint dataSize,
+                                                                                jboolean isRefresh) {
     //converting data
     jbyte *jbuf = malloc(dataSize * sizeof(jbyte));
     if (jbuf == NULL)
@@ -644,13 +585,6 @@ jboolean Java_com_qsp_player_model_libQSP_NativeMethods_QSPRestartGame(JNIEnv *e
     return QSPRestartGame((QSP_BOOL) isRefresh);
 }
 
-///* ------------------------------------------------------------ */
-///* Меню */
-void Java_com_qsp_player_model_libQSP_NativeMethods_QSPSelectMenuItem(JNIEnv *env,
-                                                                      jobject this,
-                                                                      jint ind) {
-    QSPSelectMenuItem(ind);
-}
 ///* ------------------------------------------------------------ */
 ///* Установка CALLBACK'ов */
 //void QSPSetCallBack(int type, QSP_CALLBACK func)

@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2010 Valeriy Argunov (nporep AT mail DOT ru) */
+/* Copyright (C) 2001-2020 Valeriy Argunov (byte AT qsp DOT org) */
 /*
 * This library is free software; you can redistribute it and/or modify
 * it under the terms of the GNU Lesser General Public License as published by
@@ -24,12 +24,7 @@
 	#define QSP_MAXMENUITEMS 100
 	#define QSP_MENUDELIM QSP_FMT(":")
 
-	extern QSP_CHAR *qspCurMenuLocs[QSP_MAXMENUITEMS];
-	extern int qspCurMenuItems;
-
-	/* External functions */
-	void qspClearMenu(QSP_BOOL);
 	/* Statements */
-	QSP_BOOL qspStatementShowMenu(QSPVariant *, int, QSP_CHAR **, int);
+	QSP_BOOL qspStatementShowMenu(QSPVariant *args, QSP_TINYINT count, QSPString *jumpTo, QSP_TINYINT extArg);
 
 #endif

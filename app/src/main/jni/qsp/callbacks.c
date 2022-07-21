@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2010 Valeriy Argunov (nporep AT mail DOT ru) */
+/* Copyright (C) 2001-2020 Valeriy Argunov (byte AT qsp DOT org) */
 /*
 * This library is free software; you can redistribute it and/or modify
 * it under the terms of the GNU Lesser General Public License as published by
@@ -15,35 +15,30 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 */
 
+#include <qsp/headers/declarations.h>
 #include <qsp/headers/callbacks.h>
 #include <qsp/headers/actions.h>
 #include <qsp/headers/common.h>
-#include <qsp/headers/errors.h>
 #include <qsp/headers/objects.h>
 
 QSP_CALLBACK qspCallBacks[QSP_CALL_DUMMY];
 QSP_BOOL qspIsInCallBack = QSP_FALSE;
-QSP_BOOL qspIsDisableCodeExec = QSP_FALSE;
-QSP_BOOL qspIsExitOnError = QSP_FALSE;
+QSP_BOOL qspIsDisableCodeExec = QSP_FALSE; /* blocks major state changes, so we can skip some checks */
 
-void qspSaveCallState(QSPCallState *state, QSP_BOOL isDisableCodeExec, QSP_BOOL isExitOnError)
+void qspSaveCallState(QSPCallState *state, QSP_BOOL isDisableCodeExec)
 {
 	state->IsInCallBack = qspIsInCallBack;
 	state->IsDisableCodeExec = qspIsDisableCodeExec;
-	state->IsExitOnError = qspIsExitOnError;
 	state->IsMainDescChanged = qspIsMainDescChanged;
 	state->IsVarsDescChanged = qspIsVarsDescChanged;
 	state->IsObjectsChanged = qspIsObjectsChanged;
 	state->IsActionsChanged = qspIsActionsChanged;
 	qspIsInCallBack = QSP_TRUE;
 	qspIsDisableCodeExec = isDisableCodeExec;
-	qspIsExitOnError = isExitOnError;
 }
 
 void qspRestoreCallState(QSPCallState *state)
 {
-	if (!qspIsExitOnError) qspResetError();
-	qspIsExitOnError = state->IsExitOnError;
 	qspIsDisableCodeExec = state->IsDisableCodeExec;
 	qspIsInCallBack = state->IsInCallBack;
 	if (state->IsActionsChanged) qspIsActionsChanged = QSP_TRUE;

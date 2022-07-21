@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2010 Valeriy Argunov (nporep AT mail DOT ru) */
+/* Copyright (C) 2001-2020 Valeriy Argunov (byte AT qsp DOT org) */
 /*
 * This library is free software; you can redistribute it and/or modify
 * it under the terms of the GNU Lesser General Public License as published by
@@ -23,13 +23,10 @@
 	#define QSP_RANDMASK 0x7FFFFFFF
 
 	extern QSP_BOOL qspIsDebug;
-	extern QSP_CHAR *qspCurDesc;
-	extern int qspCurDescLen;
-	extern QSP_CHAR *qspCurVars;
-	extern int qspCurVarsLen;
-	extern QSP_CHAR *qspCurInput;
-	extern int qspCurInputLen;
-	extern QSP_CHAR *qspViewPath;
+	extern QSPString qspCurDesc;
+	extern QSPString qspCurVars;
+	extern QSPString qspCurInput;
+	extern QSPString qspViewPath;
 	extern int qspTimerInterval;
 	extern QSP_BOOL qspIsMainDescChanged;
 	extern QSP_BOOL qspIsVarsDescChanged;

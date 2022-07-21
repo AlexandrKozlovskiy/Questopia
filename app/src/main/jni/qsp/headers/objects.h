@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2010 Valeriy Argunov (nporep AT mail DOT ru) */
+/* Copyright (C) 2001-2020 Valeriy Argunov (byte AT qsp DOT org) */
 /*
 * This library is free software; you can redistribute it and/or modify
 * it under the terms of the GNU Lesser General Public License as published by
@@ -25,8 +25,8 @@
 
 	typedef struct
 	{
-		QSP_CHAR *Image;
-		QSP_CHAR *Desc;
+		QSPString Image;
+		QSPString Desc;
 	} QSPObj;
 
 	extern QSPObj qspCurObjects[QSP_MAXOBJECTS];
@@ -38,10 +38,10 @@
 	/* External functions */
 	void qspClearObjects(QSP_BOOL);
 	void qspClearObjectsWithNotify();
-	int qspObjIndex(QSP_CHAR *);
+	int qspObjIndex(QSPString name);
 	/* Statements */
-	QSP_BOOL qspStatementAddObject(QSPVariant *, int, QSP_CHAR **, int);
-	QSP_BOOL qspStatementDelObj(QSPVariant *, int, QSP_CHAR **, int);
-	QSP_BOOL qspStatementUnSelect(QSPVariant *, int, QSP_CHAR **, int);
+	QSP_BOOL qspStatementAddObject(QSPVariant *args, QSP_TINYINT count, QSPString *jumpTo, QSP_TINYINT extArg);
+	QSP_BOOL qspStatementDelObj(QSPVariant *args, QSP_TINYINT count, QSPString *jumpTo, QSP_TINYINT extArg);
+	QSP_BOOL qspStatementUnSelect(QSPVariant *args, QSP_TINYINT count, QSPString *jumpTo, QSP_TINYINT extArg);
 
 #endif

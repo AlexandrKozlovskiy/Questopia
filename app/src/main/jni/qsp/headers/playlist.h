@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2010 Valeriy Argunov (nporep AT mail DOT ru) */
+/* Copyright (C) 2001-2020 Valeriy Argunov (byte AT qsp DOT org) */
 /*
 * This library is free software; you can redistribute it and/or modify
 * it under the terms of the GNU Lesser General Public License as published by
@@ -24,7 +24,7 @@
 	#define QSP_PLVOLUMEDELIM QSP_FMT("*")
 	#define QSP_MAXPLFILES 500
 
-	extern QSP_CHAR *qspPLFiles[QSP_MAXPLFILES];
+	extern QSPString qspPLFiles[QSP_MAXPLFILES];
 	extern int qspPLFilesCount;
 
 	/* External functions */
@@ -32,7 +32,7 @@
 	void qspPlayPLFiles();
 	void qspRefreshPlayList();
 	/* Statements */
-	QSP_BOOL qspStatementPlayFile(QSPVariant *, int, QSP_CHAR **, int);
-	QSP_BOOL qspStatementCloseFile(QSPVariant *, int, QSP_CHAR **, int);
+	QSP_BOOL qspStatementPlayFile(QSPVariant *args, QSP_TINYINT count, QSPString *jumpTo, QSP_TINYINT extArg);
+	QSP_BOOL qspStatementCloseFile(QSPVariant *args, QSP_TINYINT count, QSPString *jumpTo, QSP_TINYINT extArg);
 
 #endif

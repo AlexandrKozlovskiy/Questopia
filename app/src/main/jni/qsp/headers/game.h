@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2010 Valeriy Argunov (nporep AT mail DOT ru) */
+/* Copyright (C) 2001-2020 Valeriy Argunov (byte AT qsp DOT org) */
 /*
 * This library is free software; you can redistribute it and/or modify
 * it under the terms of the GNU Lesser General Public License as published by
@@ -23,29 +23,22 @@
 
 	#define QSP_GAMEID QSP_FMT("QSPGAME")
 	#define QSP_SAVEDGAMEID QSP_FMT("QSPSAVEDGAME")
-	#define QSP_GAMEMINVER QSP_FMT("5.7.0")
+	#define QSP_GAMEMINVER QSP_FMT("5.8.0")
 	#define QSP_MAXINCFILES 100
 	#define QSP_DEFTIMERINTERVAL 500
 
-	extern QSP_CHAR *qspQstPath;
-	extern int qspQstPathLen;
-	extern QSP_CHAR *qspQstFullPath;
 	extern int qspQstCRC;
 	extern int qspCurIncLocsCount;
 
 	/* External functions */
-	QSP_CHAR *qspGetAbsFromRelPath(QSP_CHAR *);
 	void qspClearIncludes(QSP_BOOL);
 	void qspNewGame(QSP_BOOL);
-	void qspOpenQuestFromData(char *, int, QSP_CHAR *, QSP_BOOL);
-	void qspOpenQuest(QSP_CHAR *, QSP_BOOL);
-	int qspSaveGameStatusToString(QSP_CHAR **);
-	void qspSaveGameStatus(QSP_CHAR *);
-	void qspOpenGameStatusFromString(QSP_CHAR *);
-	void qspOpenGameStatus(QSP_CHAR *);
+	QSP_BOOL qspOpenGame(void *data, int dataSize, QSP_BOOL isNewGame);
+	QSP_BOOL qspSaveGameStatus(void *buf, int *bufSize);
+	QSP_BOOL qspOpenGameStatus(void *data, int dataSize);
 	/* Statements */
-	QSP_BOOL qspStatementOpenQst(QSPVariant *, int, QSP_CHAR **, int);
-	QSP_BOOL qspStatementOpenGame(QSPVariant *, int, QSP_CHAR **, int);
-	QSP_BOOL qspStatementSaveGame(QSPVariant *, int, QSP_CHAR **, int);
+	QSP_BOOL qspStatementOpenQst(QSPVariant *args, QSP_TINYINT count, QSPString *jumpTo, QSP_TINYINT extArg);
+	QSP_BOOL qspStatementOpenGame(QSPVariant *args, QSP_TINYINT count, QSPString *jumpTo, QSP_TINYINT extArg);
+	QSP_BOOL qspStatementSaveGame(QSPVariant *args, QSP_TINYINT count, QSPString *jumpTo, QSP_TINYINT extArg);
 
 #endif

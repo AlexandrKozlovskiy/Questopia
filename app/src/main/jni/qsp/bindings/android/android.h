@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2010 Valeriy Argunov (nporep AT mail DOT ru) */
+/* Copyright (C) 2001-2020 Valeriy Argunov (byte AT qsp DOT org) */
 /*
 * This library is free software; you can redistribute it and/or modify
 * it under the terms of the GNU Lesser General Public License as published by
@@ -16,13 +16,56 @@
 */
 
 #include <jni.h>
-#include "../qsp.h"
 
 #ifndef QSP_ANDROIDDEFINES
 	#define QSP_ANDROIDDEFINES
 
+	static int qspEndiannessTestValue = 1;
+
 	#ifdef _UNICODE
-		typedef unsigned short QSP_CHAR;
+		typedef wchar_t QSP_CHAR;
+		#define QSP_FMT2(x) L##x
+		#define QSP_FMT(x) QSP_FMT2(x)
+
+		#define QSP_ONIG_ENC ((*(char *)&(qspEndiannessTestValue) == 1) ? \
+                    (sizeof(QSP_CHAR) == 2 ? ONIG_ENCODING_UTF16_LE : ONIG_ENCODING_UTF32_LE) : \
+                    (sizeof(QSP_CHAR) == 2 ? ONIG_ENCODING_UTF16_BE : ONIG_ENCODING_UTF32_BE))
+		#define QSP_FROM_OS_CHAR(a) qspReverseConvertUC(a, qspCP1251ToUnicodeTable)
+		#define QSP_TO_OS_CHAR(a) qspDirectConvertUC(a, qspCP1251ToUnicodeTable)
+		#define QSP_CHRLWR qspToWLower
+		#define QSP_CHRUPR qspToWUpper
+		#define QSP_WCTOB
+		#define QSP_BTOWC
+	#else
+		typedef char QSP_CHAR;
+        #define QSP_FMT(x) x
+
+        #if defined(WIN32)
+            #define QSP_ONIG_ENC ONIG_ENCODING_CP1251
+            #define QSP_FROM_OS_CHAR
+            #define QSP_TO_OS_CHAR
+            #define QSP_CHRLWR(a) qspCP1251ToLowerTable[(unsigned char)(a)]
+            #define QSP_CHRUPR(a) qspCP1251ToUpperTable[(unsigned char)(a)]
+            #define QSP_WCTOB(a) qspReverseConvertUC(a, qspCP1251ToUnicodeTable)
+            #define QSP_BTOWC(a) qspDirectConvertUC(a, qspCP1251ToUnicodeTable)
+        #else
+            #define QSP_ONIG_ENC ONIG_ENCODING_KOI8_R
+            #define QSP_FROM_OS_CHAR(a) qspReverseConvertSB(a, qspCP1251ToKOI8RTable)
+            #define QSP_TO_OS_CHAR(a) qspDirectConvertSB(a, qspCP1251ToKOI8RTable)
+            #define QSP_CHRLWR(a) qspKOI8RToLowerTable[(unsigned char)(a)]
+            #define QSP_CHRUPR(a) qspKOI8RToUpperTable[(unsigned char)(a)]
+            #define QSP_WCTOB(a) qspReverseConvertUC(a, qspKOI8RToUnicodeTable)
+            #define QSP_BTOWC(a) qspDirectConvertUC(a, qspKOI8RToUnicodeTable)
+        #endif
+	#endif
+
+	#define QSP_FIXBYTESORDER(a) ((*(char *)&(qspEndiannessTestValue) == 1) ? \
+                                 (a) : \
+                                 ((unsigned short)(((a) << 8) | ((a) >> 8))))
+	#if defined(_MSC_VER)
+		#define QSP_TIME _time64
+	#else
+		#define QSP_TIME time
 	#endif
 
 	char *qspW2C(QSP_CHAR *);
@@ -35,60 +78,78 @@
 		typedef int (*QSP_CALLBACK)(...);
 	#else
 		typedef int (*QSP_CALLBACK)();
-	#endif
+    #endif
+
+	#include "../qsp.h"
 
 	#ifdef __cplusplus
 	extern "C"
 	{
 	#endif
 
-	QSP_EXTERN QSP_BOOL QSPIsInCallBack();
+	QSP_EXTERN void QSPInit();
+	QSP_EXTERN void QSPDeInit();
+	QSP_EXTERN void QSPSetCallBack(int type, QSP_CALLBACK func);
 	QSP_EXTERN void QSPEnableDebugMode(QSP_BOOL isDebug);
-	QSP_EXTERN void QSPGetCurStateData(QSP_CHAR **loc, int *actIndex, int *line);
-	QSP_EXTERN const QSP_CHAR *QSPGetVersion();
-	QSP_EXTERN const QSP_CHAR *QSPGetCompiledDateTime();
+	QSP_EXTERN void QSPGetCurStateData(QSPString *loc, int *actIndex, int *line);
+	QSP_EXTERN QSPString QSPGetVersion();
+	QSP_EXTERN QSPString QSPGetCompiledDateTime();
 	QSP_EXTERN int QSPGetFullRefreshCount();
-	QSP_EXTERN const QSP_CHAR *QSPGetQstFullPath();
-	QSP_EXTERN const QSP_CHAR *QSPGetCurLoc();
-	QSP_EXTERN const QSP_CHAR *QSPGetMainDesc();
+	/* Main desc */
+	QSP_EXTERN QSPString QSPGetMainDesc();
 	QSP_EXTERN QSP_BOOL QSPIsMainDescChanged();
-	QSP_EXTERN const QSP_CHAR *QSPGetVarsDesc();
+	/* Var desc */
+	QSP_EXTERN QSPString QSPGetVarsDesc();
 	QSP_EXTERN QSP_BOOL QSPIsVarsDescChanged();
-	QSP_EXTERN QSP_BOOL QSPGetExprValue(const QSP_CHAR *str, QSP_BOOL *isString, int *numVal, QSP_CHAR *strVal, int strValBufSize);
-	QSP_EXTERN void QSPSetInputStrText(const QSP_CHAR *str);
+	/* Input string */
+	QSP_EXTERN void QSPSetInputStrText(QSPString str);
+	/* Actions */
+	QSP_EXTERN int QSPGetActions(QSPListItem *items, int itemsBufSize);
 	QSP_EXTERN int QSPGetActionsCount();
-	QSP_EXTERN void QSPGetActionData(int ind, QSP_CHAR **imgPath, QSP_CHAR **desc);
-	QSP_EXTERN QSP_BOOL QSPExecuteSelActionCode(QSP_BOOL isRefresh);
 	QSP_EXTERN QSP_BOOL QSPSetSelActionIndex(int ind, QSP_BOOL isRefresh);
 	QSP_EXTERN int QSPGetSelActionIndex();
 	QSP_EXTERN QSP_BOOL QSPIsActionsChanged();
+	QSP_EXTERN QSP_BOOL QSPExecuteSelActionCode(QSP_BOOL isRefresh);
+	/* Object */
+	QSP_EXTERN int QSPGetObjects(QSPListItem *items, int itemsBufSize);
 	QSP_EXTERN int QSPGetObjectsCount();
-	QSP_EXTERN void QSPGetObjectData(int ind, QSP_CHAR **imgPath, QSP_CHAR **desc);
 	QSP_EXTERN QSP_BOOL QSPSetSelObjectIndex(int ind, QSP_BOOL isRefresh);
 	QSP_EXTERN int QSPGetSelObjectIndex();
 	QSP_EXTERN QSP_BOOL QSPIsObjectsChanged();
+	/* Windows */
 	QSP_EXTERN void QSPShowWindow(int type, QSP_BOOL isShow);
-	QSP_EXTERN QSP_BOOL QSPGetVarValuesCount(const QSP_CHAR *name, int *count);
-	QSP_EXTERN QSP_BOOL QSPGetVarValues(const QSP_CHAR *name, int ind, int *numVal, QSP_CHAR **strVal);
-	QSP_EXTERN int QSPGetMaxVarsCount();
-	QSP_EXTERN QSP_BOOL QSPGetVarNameByIndex(int ind, QSP_CHAR **name);
-	QSP_EXTERN QSP_BOOL QSPExecString(const QSP_CHAR *str, QSP_BOOL isRefresh);
+	/* Code execution */
+	QSP_EXTERN QSP_BOOL QSPExecString(QSPString str, QSP_BOOL isRefresh);
 	QSP_EXTERN QSP_BOOL QSPExecCounter(QSP_BOOL isRefresh);
 	QSP_EXTERN QSP_BOOL QSPExecUserInput(QSP_BOOL isRefresh);
-	QSP_EXTERN QSP_BOOL QSPExecLocationCode(const QSP_CHAR *name, QSP_BOOL isRefresh);
-	QSP_EXTERN void QSPGetLastErrorData(int *errorNum, QSP_CHAR **errorLoc, int *errorActIndex, int *errorLine);
-	QSP_EXTERN const QSP_CHAR *QSPGetErrorDesc(int errorNum);
+	QSP_EXTERN QSP_BOOL QSPExecLocationCode(QSPString name, QSP_BOOL isRefresh);
+	/* Errors */
+	QSP_EXTERN void QSPGetLastErrorData(int *errorNum, QSPString *errorLoc, int *errorActIndex, int *errorLine);
+	QSP_EXTERN QSPString QSPGetErrorDesc(int errorNum);
+	/* Game */
+	QSP_EXTERN QSP_BOOL QSPLoadGameWorldFromData(const void *data, int dataSize, QSP_BOOL isNewGame);
+	QSP_EXTERN QSP_BOOL QSPSaveGameAsData(void *buf, int *bufSize, QSP_BOOL isRefresh);
+	QSP_EXTERN QSP_BOOL QSPOpenSavedGameFromData(const void *data, int dataSize, QSP_BOOL isRefresh);
+
+	QSP_EXTERN QSP_BOOL QSPRestartGame(QSP_BOOL isRefresh);
+
+	/* Variables */
+	QSP_EXTERN QSP_BOOL QSPGetVarValuesCount(QSPString name, int *count);
+	QSP_EXTERN QSP_BOOL QSPGetVarValues(QSPString name, int ind, int *numVal, QSPString *strVal);
+	QSP_EXTERN int QSPGetMaxVarsCount();
+	QSP_EXTERN QSP_BOOL QSPGetVarNameByIndex(int ind, QSPString *name);
+
+	/* Android specific code */
+	QSP_EXTERN QSP_BOOL QSPIsInCallBack();
+	QSP_EXTERN const QSP_CHAR *QSPGetQstFullPath();
+	QSP_EXTERN const QSP_CHAR *QSPGetCurLoc();
+	QSP_EXTERN QSP_BOOL QSPGetExprValue(const QSP_CHAR *str, QSP_BOOL *isString, int *numVal, QSP_CHAR *strVal, int strValBufSize);
 	QSP_EXTERN QSP_BOOL QSPLoadGameWorld(const QSP_CHAR *file);
-	QSP_EXTERN QSP_BOOL QSPLoadGameWorldFromData(const char *data, int dataSize, const QSP_CHAR *file);
 	QSP_EXTERN QSP_BOOL QSPSaveGame(const QSP_CHAR *file, QSP_BOOL isRefresh);
 	QSP_EXTERN QSP_BOOL QSPSaveGameAsString(QSP_CHAR *strBuf, int strBufSize, int *realSize, QSP_BOOL isRefresh);
 	QSP_EXTERN QSP_BOOL QSPOpenSavedGame(const QSP_CHAR *file, QSP_BOOL isRefresh);
 	QSP_EXTERN QSP_BOOL QSPOpenSavedGameFromString(const QSP_CHAR *str, QSP_BOOL isRefresh);
-	QSP_EXTERN QSP_BOOL QSPRestartGame(QSP_BOOL isRefresh);
 	QSP_EXTERN void QSPSelectMenuItem(int ind);
-	QSP_EXTERN void QSPSetCallBack(int type, QSP_CALLBACK func);
-	QSP_EXTERN void QSPInit();
-	QSP_EXTERN void QSPDeInit();
 
 	#ifdef __cplusplus
 	}

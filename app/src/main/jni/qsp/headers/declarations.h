@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2010 Valeriy Argunov (nporep AT mail DOT ru) */
+/* Copyright (C) 2001-2020 Valeriy Argunov (byte AT qsp DOT org) */
 /*
 * This library is free software; you can redistribute it and/or modify
 * it under the terms of the GNU Lesser General Public License as published by
@@ -37,65 +37,26 @@
 /* -------- */
 
 #include "../bindings/bindings_config.h"
-#include "qsp/onig/headers/oniguruma.h"
+#include <qsp/bindings/qsp.h>
+#include <qsp/onig/headers/oniguruma.h>
 
 #ifndef QSP_DEFINES
 	#define QSP_DEFINES
 
-	#ifdef _UNICODE
-		#ifdef _MSC_VER
-			#define QSP_FOPEN _wfopen
-		#else
-			#define QSP_FOPEN qspFileOpen
-		#endif
-		#define QSP_STRCOLL qspStrsComp
-		#define QSP_CHRLWR qspToWLower
-		#define QSP_CHRUPR qspToWUpper
-		#define QSP_WCSTOMBSLEN(a) (int)wcstombs(0, a, 0)
-		#define QSP_WCSTOMBS wcstombs
-		#define QSP_MBTOSB(a) ((a) % 256)
-		#define QSP_ONIG_ENC (sizeof(QSP_CHAR) == 2 ? ONIG_ENCODING_UTF16_LE : ONIG_ENCODING_UTF32_LE)
-		#define QSP_FROM_OS_CHAR(a) qspReverseConvertUC(a, qspCP1251ToUnicodeTable)
-		#define QSP_TO_OS_CHAR(a) qspDirectConvertUC(a, qspCP1251ToUnicodeTable)
-		#define QSP_WCTOB
-		#define QSP_BTOWC
+	#if defined(__GNUC__)
+		#define INLINE static inline
 	#else
-		#define QSP_FOPEN fopen
-		#define QSP_WCSTOMBSLEN qspStrLen
-		#define QSP_WCSTOMBS qspStrNCopy
-		#define QSP_MBTOSB(a) ((unsigned char)(a))
-		#if defined(_WIN) || defined(_PSP)
-			#define QSP_FROM_OS_CHAR
-			#define QSP_TO_OS_CHAR
-			#define QSP_WCTOB(a) qspReverseConvertUC(a, qspCP1251ToUnicodeTable)
-			#define QSP_BTOWC(a) qspDirectConvertUC(a, qspCP1251ToUnicodeTable)
-			#define QSP_CHRLWR(a) qspCP1251ToLowerTable[(unsigned char)(a)]
-			#define QSP_CHRUPR(a) qspCP1251ToUpperTable[(unsigned char)(a)]
-			#define QSP_STRCOLL(a, b) qspStrCmpSB(a, b, qspCP1251OrderTable)
-			#define QSP_ONIG_ENC ONIG_ENCODING_CP1251
-		#else
-			#define QSP_FROM_OS_CHAR(a) qspReverseConvertSB(a, qspCP1251ToKOI8RTable)
-			#define QSP_TO_OS_CHAR(a) qspDirectConvertSB(a, qspCP1251ToKOI8RTable)
-			#define QSP_WCTOB(a) qspReverseConvertUC(a, qspKOI8RToUnicodeTable)
-			#define QSP_BTOWC(a) qspDirectConvertUC(a, qspKOI8RToUnicodeTable)
-			#define QSP_CHRLWR(a) qspKOI8RToLowerTable[(unsigned char)(a)]
-			#define QSP_CHRUPR(a) qspKOI8RToUpperTable[(unsigned char)(a)]
-			#define QSP_STRCOLL(a, b) qspStrCmpSB(a, b, qspKOI8ROrderTable)
-			#define QSP_ONIG_ENC ONIG_ENCODING_KOI8_R
-		#endif
-	#endif
-	#ifdef _MSC_VER
-		#define QSP_TIME _time64
-	#else
-		#define QSP_TIME time
-	#endif
-	#if defined(_WIN) || defined(_PSP)
-		#define QSP_PATHDELIMS QSP_FMT("/\\")
-	#else
-		#define QSP_PATHDELIMS QSP_FMT("/")
-	#endif
+		#define INLINE static
+    #endif
 
-	#define QSP_VER QSP_FMT("5.7.0")
+	#define QSP_STATIC_LEN(x) (sizeof(x) / sizeof(QSP_CHAR) - 1)
+	#if defined(__GNUC__)
+		#define QSP_STATIC_STR(x) ((QSPString) { (x), (x) + QSP_STATIC_LEN(x) })
+	#else
+		#define QSP_STATIC_STR(x) (qspStringFromLen(x, QSP_STATIC_LEN(x)))
+    #endif
+
+	#define QSP_VER QSP_FMT("5.8.0")
 	#define QSP_LOCALE "russian"
 	#define QSP_STRCHAR QSP_FMT("$")
 	#define QSP_LABEL QSP_FMT(":")
@@ -121,12 +82,12 @@
 	#define QSP_LRBRACK QSP_FMT("(")
 	#define QSP_RRBRACK QSP_FMT(")")
 	#define QSP_APPEND QSP_FMT("&")
-	#define QSP_UPLUS QSP_FMT("+")
-	#define QSP_UMINUS QSP_FMT("-")
+	#define QSP_NEGATION QSP_FMT("-")
 	#define QSP_ADD QSP_FMT("+")
 	#define QSP_SUB QSP_FMT("-")
 	#define QSP_DIV QSP_FMT("/")
 	#define QSP_MUL QSP_FMT("*")
+	#define QSP_USERFUNC QSP_FMT("@")
 	#define QSP_DELIMS QSP_FMT(" \t&'\"()[]=!<>+-/*:,{}")
 
 #endif

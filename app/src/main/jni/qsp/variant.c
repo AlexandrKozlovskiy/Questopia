@@ -19,60 +19,58 @@
 #include "qsp/headers/coding.h"
 #include "qsp/headers/text.h"
 
-void qspFreeVariants(QSPVariant *args, int count)
+static QSP_BOOL qspTypeConversionTable[QSP_TYPE_DEFINED_TYPES][QSP_TYPE_DEFINED_TYPES] =
 {
-	while (--count >= 0)
-		if (args[count].IsStr) free(QSP_STR(args[count]));
-}
+	/*             NUMBER     STRING     CODE       TUPLE      VARREF */
+	/* NUMBER */ { QSP_FALSE, QSP_TRUE,  QSP_TRUE,  QSP_TRUE,  QSP_TRUE },
+	/* STRING */ { QSP_TRUE,  QSP_FALSE, QSP_TRUE,  QSP_TRUE,  QSP_TRUE },
+	/* CODE */   { QSP_TRUE,  QSP_FALSE, QSP_FALSE, QSP_TRUE,  QSP_TRUE },
+	/* TUPLE */  { QSP_TRUE,  QSP_FALSE, QSP_TRUE,  QSP_FALSE, QSP_TRUE },
+	/* VARREF */ { QSP_TRUE,  QSP_FALSE, QSP_TRUE,  QSP_TRUE,  QSP_FALSE },
+};
 
-QSPVariant qspGetEmptyVariant(QSP_BOOL isStringType)
-{
-	QSPVariant ret;
-	if (ret.IsStr = isStringType)
-		QSP_STR(ret) = qspGetNewText(QSP_FMT(""), 0);
-	else
-		QSP_NUM(ret) = 0;
-	return ret;
-}
+INLINE void qspFormatVariant(QSPVariant *val);
 
-QSP_BOOL qspConvertVariantTo(QSPVariant *val, QSP_BOOL isToString)
+INLINE void qspFormatVariant(QSPVariant *val)
 {
-	int num;
-	QSP_CHAR *temp, buf[12];
-	if (val->IsStr)
+	switch (val->Type)
 	{
-		if (!isToString)
+		case QSP_TYPE_VARREF:
 		{
-			num = qspStrToNum(QSP_PSTR(val), &temp);
-			if (*temp) return QSP_TRUE;
-			free(QSP_PSTR(val));
-			QSP_PNUM(val) = num;
-			val->IsStr = QSP_FALSE;
+			QSPString temp = qspGetNewText(qspDelSpc(QSP_PSTR(val)));
+			qspUpperStr(&temp);
+			qspFreeString(QSP_PSTR(val));
+			QSP_PSTR(val) = temp;
+			break;
 		}
 	}
-	else if (isToString)
-	{
-		QSP_PSTR(val) = qspGetNewText(qspNumToStr(buf, QSP_PNUM(val)), -1);
-		val->IsStr = QSP_TRUE;
-	}
-	return QSP_FALSE;
 }
 
-void qspCopyVariant(QSPVariant *dest, QSPVariant *src)
+QSP_BOOL qspConvertVariantTo(QSPVariant *val, QSP_TINYINT type)
 {
-	if (dest->IsStr = src->IsStr)
-		QSP_PSTR(dest) = qspGetNewText(QSP_PSTR(src), -1);
-	else
-		QSP_PNUM(dest) = QSP_PNUM(src);
-}
-
-QSP_BOOL qspIsCanConvertToNum(QSPVariant *val)
-{
-	QSP_CHAR *temp;
-	if (val->IsStr)
+	if (val->Type != type && qspTypeConversionTable[val->Type][type])
 	{
-		qspStrToNum(QSP_PSTR(val), &temp);
-		if (*temp) return QSP_FALSE;
+		if (QSP_ISNUM(type))
+		{
+			if (QSP_ISSTR(val->Type))
+			{
+				QSP_BOOL isValid;
+				int num = qspStrToNum(QSP_PSTR(val), &isValid);
+				if (!isValid) return QSP_FALSE;
+				qspFreeString(QSP_PSTR(val));
+				QSP_PNUM(val) = num;
+			}
+		}
+		else
+		{
+			if (QSP_ISNUM(val->Type))
+			{
+				QSP_CHAR buf[12];
+				QSP_PSTR(val) = qspGetNewText(qspNumToStr(buf, QSP_PNUM(val)));
+			}
+		}
+		val->Type = type;
+		qspFormatVariant(val);
 	}
 	return QSP_TRUE;
 }
@@ -80,26 +78,47 @@ QSP_BOOL qspIsCanConvertToNum(QSPVariant *val)
 int qspAutoConvertCompare(QSPVariant *v1, QSPVariant *v2)
 {
 	int res;
-	if (v1->IsStr != v2->IsStr)
+	if (QSP_BASETYPE(v1->Type) != QSP_BASETYPE(v2->Type))
 	{
-		if (v2->IsStr)
+		if (QSP_ISSTR(v2->Type))
 		{
 			if (qspIsCanConvertToNum(v2))
-				qspConvertVariantTo(v2, QSP_FALSE);
+				qspConvertVariantTo(v2, v1->Type);
 			else
-				qspConvertVariantTo(v1, QSP_TRUE);
+				qspConvertVariantTo(v1, v2->Type);
 		}
 		else
 		{
 			if (qspIsCanConvertToNum(v1))
-				qspConvertVariantTo(v1, QSP_FALSE);
+				qspConvertVariantTo(v1, v2->Type);
 			else
-				qspConvertVariantTo(v2, QSP_TRUE);
+				qspConvertVariantTo(v2, v1->Type);
 		}
 	}
-	if (v1->IsStr)
-		res = QSP_STRCOLL(QSP_PSTR(v1), QSP_PSTR(v2));
+	if (QSP_ISSTR(v1->Type))
+		res = qspStrsComp(QSP_PSTR(v1), QSP_PSTR(v2));
 	else
 		res = (QSP_PNUM(v1) > QSP_PNUM(v2) ? 1 : (QSP_PNUM(v1) < QSP_PNUM(v2) ? -1 : 0));
 	return res;
+}
+
+void qspUpdateVariantValue(QSPVariant *dest, QSPVariant *src)
+{
+	if (QSP_BASETYPE(src->Type) != QSP_BASETYPE(dest->Type))
+	{
+		if (QSP_ISSTR(dest->Type = src->Type))
+			QSP_PSTR(dest) = qspGetNewText(QSP_PSTR(src));
+		else
+		{
+			qspFreeString(QSP_PSTR(dest));
+			QSP_PNUM(dest) = QSP_PNUM(src);
+		}
+	}
+	else
+	{
+		if (QSP_ISSTR(dest->Type = src->Type))
+			qspUpdateText(&QSP_PSTR(dest), QSP_PSTR(src));
+		else
+			QSP_PNUM(dest) = QSP_PNUM(src);
+	}
 }

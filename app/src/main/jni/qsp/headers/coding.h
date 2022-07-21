@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2010 Valeriy Argunov (nporep AT mail DOT ru) */
+/* Copyright (C) 2001-2020 Valeriy Argunov (byte AT qsp DOT org) */
 /*
 * This library is free software; you can redistribute it and/or modify
 * it under the terms of the GNU Lesser General Public License as published by
@@ -30,13 +30,11 @@
 	extern unsigned char qspKOI8ROrderTable[];
 
 	/* External functions */
-	int qspStrCmpSB(char *, char *, const unsigned char *);
-	QSP_CHAR *qspCodeReCode(QSP_CHAR *, QSP_BOOL);
-	char *qspFromQSPString(QSP_CHAR *);
-	QSP_CHAR *qspGameToQSPString(char *, QSP_BOOL, QSP_BOOL);
-	int qspSplitGameStr(char *, QSP_BOOL, QSP_CHAR *, char ***);
-	int qspReCodeGetIntVal(QSP_CHAR *);
-	int qspCodeWriteIntVal(QSP_CHAR **, int, int, QSP_BOOL);
-	int qspCodeWriteVal(QSP_CHAR **, int, QSP_CHAR *, QSP_BOOL);
+	void *qspStringToFileData(QSPString s, QSP_BOOL isUCS2, int *dataSize);
+	QSPString qspStringFromFileData(void *data, int dataSize, QSP_BOOL isUCS2);
+	QSPString qspCodeDeCode(QSPString str, QSP_BOOL isCode);
+	int qspDeCodeGetIntVal(QSPString val);
+	void qspCodeWriteIntVal(QSPString *s, int val, QSP_BOOL isCode);
+	void qspCodeWriteVal(QSPString *s, QSPString val, QSP_BOOL isCode);
 
 #endif

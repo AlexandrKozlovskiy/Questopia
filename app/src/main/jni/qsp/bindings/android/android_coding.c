@@ -135,7 +135,7 @@ char *qspW2C(QSP_CHAR *src)
 	if (src==NULL)
 		return NULL;
 	int ret;
-	char *dst = (char *)malloc((qspStrLen(src) * 3) + 1);
+	char *dst = (char *)malloc((qspStrLen(qspStringFromC(src)) * 3) + 1);
 	char *s = dst;
 	while ((ret = qspUTF8_wctomb(s, *src, 3)) && *s)
 	{

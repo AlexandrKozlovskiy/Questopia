@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2010 Valeriy Argunov (nporep AT mail DOT ru) */
+/* Copyright (C) 2001-2020 Valeriy Argunov (byte AT qsp DOT org) */
 /*
 * This library is free software; you can redistribute it and/or modify
 * it under the terms of the GNU Lesser General Public License as published by
@@ -24,39 +24,47 @@
 
 	#define QSP_STATSLEVELS 3
 	#define QSP_MAXSTATSNAMES 100
-	#define QSP_STATMAXARGS 10
+	#define QSP_STATMAXARGS 20
 	#define QSP_STATELSE QSP_FMT("ELSE")
+	#define QSP_STATLOOPWHILE QSP_FMT("WHILE")
+	#define QSP_STATLOOPSTEP QSP_FMT("STEP")
 
-	typedef QSP_BOOL (*QSP_STATEMENT)(QSPVariant *, int, QSP_CHAR **, int);
+	typedef QSP_BOOL (*QSP_STATEMENT)(QSPVariant *, QSP_TINYINT, QSPString *, QSP_TINYINT);
 
 	typedef struct
 	{
-		int Code;
-		QSP_CHAR *Name;
-		int NameLen;
+		QSP_TINYINT Code;
+		QSPString Name;
 	} QSPStatName;
 
 	typedef struct
 	{
-		int MinArgsCount;
-		int MaxArgsCount;
-		int ArgsTypes[QSP_STATMAXARGS];
-		int ExtArg;
+		QSP_TINYINT MinArgsCount;
+		QSP_TINYINT MaxArgsCount;
+		QSP_TINYINT ArgsTypes[QSP_STATMAXARGS];
 		QSP_STATEMENT Func;
 	} QSPStatement;
+
+	enum
+	{
+		qspFlowExecute,
+		qspFlowJumpToSpecified
+	};
 
 	enum
 	{
 		qspStatUnknown,
 		qspStatLabel,
 		qspStatComment,
+		qspStatImplicitStatement,
 		qspStatAct,
+		qspStatLoop,
+		qspStatLocal,
 		qspStatIf,
 		qspStatElseIf,
 		qspStatElse,
 		qspStatEnd,
 		qspStatAddObj,
-		qspStatAddQst,
 		qspStatClA,
 		qspStatClear,
 		qspStatCloseAll,
@@ -69,12 +77,13 @@
 		qspStatDynamic,
 		qspStatExec,
 		qspStatExit,
+		qspStatFreeLib,
 		qspStatGoSub,
 		qspStatGoTo,
+		qspStatIncLib,
 		qspStatJump,
 		qspStatKillAll,
 		qspStatKillObj,
-		qspStatKillQst,
 		qspStatKillVar,
 		qspStatMClear,
 		qspStatMenu,
@@ -104,12 +113,16 @@
 		qspStatLast_Statement
 	};
 
+	extern QSPStatement qspStats[qspStatLast_Statement];
+	extern QSPStatName qspStatsNames[QSP_STATSLEVELS][QSP_MAXSTATSNAMES];
+	extern int qspStatsNamesCounts[QSP_STATSLEVELS];
+	extern int qspStatMaxLen;
+
 	/* External functions */
 	void qspInitStats();
-	int qspGetStatArgs(QSP_CHAR *, int, QSPVariant *);
-	QSP_BOOL qspExecCode(QSPLineOfCode *, int, int, int, QSP_CHAR **);
-	void qspExecStringAsCodeWithArgs(QSP_CHAR *, QSPVariant *, int);
-	QSP_CHAR *qspGetLineLabel(QSP_CHAR *);
-	void qspInitLineOfCode(QSPLineOfCode *, QSP_CHAR *, int);
+	int qspGetStatArgs(QSPString s, QSPCachedStat *stat, QSPVariant *args);
+	QSP_BOOL qspExecCode(QSPLineOfCode *s, int startLine, int endLine, int codeOffset, QSPString *jumpTo);
+	QSP_BOOL qspExecCodeBlockWithLocals(QSPLineOfCode *s, int startLine, int endLine, int codeOffset, QSPString *jumpTo);
+	void qspExecStringAsCodeWithArgs(QSPString s, QSPVariant *args, QSP_TINYINT count, int codeOffset, QSPVariant *res);
 
 #endif

@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2010 Valeriy Argunov (nporep AT mail DOT ru) */
+/* Copyright (C) 2001-2020 Valeriy Argunov (byte AT qsp DOT org) */
 /*
 * This library is free software; you can redistribute it and/or modify
 * it under the terms of the GNU Lesser General Public License as published by
@@ -19,31 +19,19 @@
 #include <qsp/headers/callbacks.h>
 #include <qsp/headers/errors.h>
 #include <qsp/headers/game.h>
+#include <qsp/headers/locations.h>
 #include <qsp/headers/text.h>
 #include <qsp/headers/variables.h>
 
-QSP_CHAR *qspCurMenuLocs[QSP_MAXMENUITEMS];
-int qspCurMenuItems = 0;
-
-void qspClearMenu(QSP_BOOL isFirst)
+QSP_BOOL qspStatementShowMenu(QSPVariant *args, QSP_TINYINT count, QSPString *jumpTo, QSP_TINYINT extArg)
 {
-	int i;
-	if (!isFirst)
-	{
-		for (i = 0; i < qspCurMenuItems; ++i)
-			free(qspCurMenuLocs[i]);
-	}
-	qspCurMenuItems = 0;
-}
-
-QSP_BOOL qspStatementShowMenu(QSPVariant *args, int count, QSP_CHAR **jumpTo, int extArg)
-{
-	int ind, maxItems, len;
 	QSPVar *var;
-	QSP_CHAR *imgPath, *str, *pos, *pos2;
-	if (!(var = qspVarReferenceWithType(QSP_STR(args[0]), QSP_FALSE, 0))) return QSP_FALSE;
-	qspClearMenu(QSP_FALSE);
-	qspCallDeleteMenu();
+	QSPVariant arg;
+	int ind, itemsCount, maxItems;
+	QSPListItem menuItems[QSP_MAXMENUITEMS];
+	QSPString menuLocs[QSP_MAXMENUITEMS], imgPath, str;
+	QSP_CHAR *pos, *pos2;
+	if (!(var = qspVarReference(QSP_STR(args[0]), QSP_FALSE))) return QSP_FALSE;
 	if (count == 1)
 	{
 		ind = 0;
@@ -61,38 +49,55 @@ QSP_BOOL qspStatementShowMenu(QSPVariant *args, int count, QSP_CHAR **jumpTo, in
 			if (maxItems < 0) maxItems = 0;
 		}
 	}
+	itemsCount = 0;
 	while (ind < var->ValsCount)
 	{
-		if (qspCurMenuItems == maxItems) break;
-		if (!((str = var->Values[ind].Str) && qspIsAnyString(str))) break;
-		if (!(pos2 = qspInStrRChars(str, QSP_MENUDELIM, 0)))
+		if (itemsCount == maxItems) break;
+		if (!QSP_ISSTR(var->Values[ind].Type)) break;
+		str = QSP_STR(var->Values[ind]);
+		if (!(str.Str && qspIsAnyString(str))) break;
+		if (!(pos2 = qspInStrRChars(str, QSP_MENUDELIM)))
 		{
 			qspSetError(QSP_ERR_COLONNOTFOUND);
 			return QSP_FALSE;
 		}
-		if (qspCurMenuItems == QSP_MAXMENUITEMS)
+		if (itemsCount == QSP_MAXMENUITEMS)
 		{
 			qspSetError(QSP_ERR_CANTADDMENUITEM);
 			return QSP_FALSE;
 		}
-		if (pos = qspInStrRChars(str, QSP_MENUDELIM, pos2))
+		if (pos = qspInStrRChars(qspStringFromPair(str.Str, pos2), QSP_MENUDELIM))
 		{
-			len = (int)(pos2 - pos) - 1;
-			imgPath = (qspIsAnyString(++pos2) ? qspGetAbsFromRelPath(pos2) : 0);
+			imgPath = qspStringFromPair(pos2 + QSP_STATIC_LEN(QSP_MENUDELIM), str.End);
+			imgPath = (qspIsAnyString(imgPath) ? qspGetNewText(imgPath) : qspNullString);
 		}
 		else
 		{
 			pos = pos2;
-			len = -1;
-			imgPath = 0;
+			pos2 = str.End;
+			imgPath = qspNullString;
 		}
-		qspCurMenuLocs[qspCurMenuItems++] = qspGetNewText(pos + 1, len);
-		*pos = 0;
-		qspCallAddMenuItem(str, imgPath);
-		*pos = QSP_MENUDELIM[0];
-		if (imgPath) free(imgPath);
+		menuLocs[itemsCount] = qspGetNewText(qspStringFromPair(pos + QSP_STATIC_LEN(QSP_MENUDELIM), pos2));
+		menuItems[itemsCount].Name = qspGetNewText(qspStringFromPair(str.Str, pos));
+		menuItems[itemsCount].Image = imgPath;
+		++itemsCount;
 		++ind;
 	}
-	if (qspCurMenuItems) qspCallShowMenu();
+	if (itemsCount)
+	{
+		ind = qspCallShowMenu(menuItems, itemsCount);
+		if (ind >= 0 && ind < itemsCount)
+		{
+			arg.Type = QSP_TYPE_NUMBER;
+			QSP_NUM(arg) = ind + 1;
+			qspExecLocByNameWithArgs(menuLocs[ind], &arg, 1, 0);
+		}
+		while (--itemsCount >= 0)
+		{
+			qspFreeString(menuItems[itemsCount].Name);
+			qspFreeString(menuItems[itemsCount].Image);
+			qspFreeString(menuLocs[itemsCount]);
+		}
+	}
 	return QSP_FALSE;
 }

@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2010 Valeriy Argunov (nporep AT mail DOT ru) */
+/* Copyright (C) 2001-2020 Valeriy Argunov (byte AT qsp DOT org) */
 /*
 * This library is free software; you can redistribute it and/or modify
 * it under the terms of the GNU Lesser General Public License as published by
@@ -25,15 +25,15 @@
 
 	typedef struct
 	{
-		QSP_CHAR *Image;
-		QSP_CHAR *Desc;
+		QSPString Image;
+		QSPString Desc;
 		QSPLineOfCode *OnPressLines;
 		int OnPressLinesCount;
 	} QSPLocAct;
 	typedef struct
 	{
-		QSP_CHAR *Name;
-		QSP_CHAR *Desc;
+		QSPString Name;
+		QSPString Desc;
 		QSPLineOfCode *OnVisitLines;
 		int OnVisitLinesCount;
 		QSPLocAct Actions[QSP_MAXACTIONS];
@@ -41,7 +41,7 @@
 	typedef struct
 	{
 		int Index;
-		QSP_CHAR *Name;
+		QSPString Name;
 	} QSPLocName;
 
 	extern QSPLocation *qspLocs;
@@ -54,11 +54,9 @@
 	/* External functions */
 	void qspCreateWorld(int, int);
 	void qspPrepareLocs();
-	int qspLocIndex(QSP_CHAR *);
-	void qspExecLocByIndex(int, QSP_BOOL);
-	void qspExecLocByName(QSP_CHAR *, QSP_BOOL);
-	void qspExecLocByNameWithArgs(QSP_CHAR *, QSPVariant *, int);
-	void qspExecLocByVarNameWithArgs(QSP_CHAR *, QSPVariant *, int);
-	void qspRefreshCurLoc(QSP_BOOL, QSPVariant *, int);
+	int qspLocIndex(QSPString name);
+	void qspExecLocByNameWithArgs(QSPString name, QSPVariant *args, QSP_TINYINT count, QSPVariant *res);
+	void qspExecLocByVarNameWithArgs(QSPString name, QSPVariant *args, QSP_TINYINT count);
+	void qspRefreshCurLoc(QSP_BOOL isChangeDesc, QSPVariant *args, QSP_TINYINT count);
 
 #endif

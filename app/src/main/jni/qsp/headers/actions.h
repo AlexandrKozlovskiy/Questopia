@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2010 Valeriy Argunov (nporep AT mail DOT ru) */
+/* Copyright (C) 2001-2020 Valeriy Argunov (byte AT qsp DOT org) */
 /*
 * This library is free software; you can redistribute it and/or modify
 * it under the terms of the GNU Lesser General Public License as published by
@@ -26,14 +26,12 @@
 
 	typedef struct
 	{
-		QSP_CHAR *Image;
-		QSP_CHAR *Desc;
+		QSPString Image;
+		QSPString Desc;
 		QSPLineOfCode *OnPressLines;
 		int OnPressLinesCount;
 		int Location;
 		int ActIndex;
-		int StartLine;
-		QSP_BOOL IsManageLines;
 	} QSPCurAct;
 
 	extern QSPCurAct qspCurActions[QSP_MAXACTIONS];
@@ -44,11 +42,12 @@
 
 	/* External functions */
 	void qspClearActions(QSP_BOOL);
-	void qspAddAction(QSPVariant *, int, QSPLineOfCode *, int, int, QSP_BOOL);
+	void qspAddAction(QSPVariant *args, QSP_TINYINT count, QSPLineOfCode *code, int start, int end);
 	void qspExecAction(int);
-	QSP_CHAR *qspGetAllActionsAsCode();
+	QSPString qspGetAllActionsAsCode();
 	/* Statements */
-	void qspStatementAddAct(QSPLineOfCode *, int, int);
-	QSP_BOOL qspStatementDelAct(QSPVariant *, int, QSP_CHAR **, int);
+	void qspStatementSinglelineAddAct(QSPLineOfCode *s, int statPos, int endPos);
+	void qspStatementMultilineAddAct(QSPLineOfCode *s, int lineInd, int endLine);
+	QSP_BOOL qspStatementDelAct(QSPVariant *args, QSP_TINYINT count, QSPString *jumpTo, QSP_TINYINT extArg);
 
 #endif

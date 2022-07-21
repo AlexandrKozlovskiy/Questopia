@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2010 Valeriy Argunov (nporep AT mail DOT ru) */
+/* Copyright (C) 2001-2020 Valeriy Argunov (byte AT qsp DOT org) */
 /*
 * This library is free software; you can redistribute it and/or modify
 * it under the terms of the GNU Lesser General Public License as published by
@@ -19,65 +19,69 @@
 #include "qsp/headers/actions.h"
 #include "qsp/headers/errors.h"
 #include "qsp/headers/game.h"
-#include "qsp/headers/menu.h"
 #include "qsp/headers/objects.h"
 #include "qsp/headers/playlist.h"
+#include "qsp/headers/regexp.h"
+#include "qsp/headers/text.h"
 #include "qsp/headers/variables.h"
 
 static unsigned int qspRandX[55], qspRandY[256], qspRandZ;
 static int qspRandI, qspRandJ;
 QSP_BOOL qspIsDebug = QSP_FALSE;
-QSP_CHAR *qspCurDesc = 0;
-int qspCurDescLen = 0;
-QSP_CHAR *qspCurVars = 0;
-int qspCurVarsLen = 0;
-QSP_CHAR *qspCurInput = 0;
-int qspCurInputLen = 0;
-QSP_CHAR *qspViewPath = 0;
+QSPString qspCurDesc;
+QSPString qspCurVars;
+QSPString qspCurInput;
+QSPString qspViewPath;
 int qspTimerInterval = 0;
 QSP_BOOL qspIsMainDescChanged = QSP_FALSE;
 QSP_BOOL qspIsVarsDescChanged = QSP_FALSE;
 QSP_BOOL qspCurIsShowVars = QSP_TRUE;
 QSP_BOOL qspCurIsShowInput = QSP_TRUE;
 
-static unsigned int qspURand();
+INLINE unsigned int qspURand();
 
 void qspPrepareExecution()
 {
 	qspResetError();
+
+	/* reset execution state */
+	qspRealCurLoc = -1;
+	qspRealActIndex = -1;
+	qspRealLine = 0;
+
 	qspIsMainDescChanged = qspIsVarsDescChanged = qspIsObjectsChanged = qspIsActionsChanged = QSP_FALSE;
 }
 
 void qspMemClear(QSP_BOOL isFirst)
 {
+	int i;
 	qspClearIncludes(isFirst);
 	qspClearVars(isFirst);
 	qspClearObjects(isFirst);
 	qspClearActions(isFirst);
-	qspClearMenu(isFirst);
 	qspClearPlayList(isFirst);
+	qspClearRegExps(isFirst);
 	if (!isFirst)
 	{
-		if (qspCurDesc)
-		{
-			free(qspCurDesc);
-			if (qspCurDescLen) qspIsMainDescChanged = QSP_TRUE;
-		}
-		if (qspCurVars)
-		{
-			free(qspCurVars);
-			if (qspCurVarsLen) qspIsVarsDescChanged = QSP_TRUE;
-		}
-		if (qspCurInput) free(qspCurInput);
-		if (qspViewPath) free(qspViewPath);
+		if (!qspIsEmpty(qspCurDesc)) qspIsMainDescChanged = QSP_TRUE;
+		if (!qspIsEmpty(qspCurVars)) qspIsVarsDescChanged = QSP_TRUE;
+
+		qspFreeString(qspCurDesc);
+		qspFreeString(qspCurVars);
+		qspFreeString(qspCurInput);
+		qspFreeString(qspViewPath);
+
+		for (i = qspSavedVarGroupsCount - 1; i >= 0; --i)
+			qspClearVarsList(qspSavedVarGroups[i].Vars, qspSavedVarGroups[i].VarsCount);
+		if (qspSavedVarGroups) free(qspSavedVarGroups);
 	}
-	qspCurDesc = 0;
-	qspCurDescLen = 0;
-	qspCurVars = 0;
-	qspCurVarsLen = 0;
-	qspCurInput = 0;
-	qspCurInputLen = 0;
-	qspViewPath = 0;
+	qspCurDesc = qspNullString;
+	qspCurVars = qspNullString;
+	qspCurInput = qspNullString;
+	qspViewPath = qspNullString;
+	qspSavedVarGroups = 0;
+	qspSavedVarGroupsCount = 0;
+	qspSavedVarGroupsBufSize = 0;
 }
 
 void qspSetSeed(unsigned int seed)
@@ -94,7 +98,7 @@ void qspSetSeed(unsigned int seed)
 	qspRandZ = qspURand();
 }
 
-static unsigned int qspURand()
+INLINE unsigned int qspURand()
 {
 	if (--qspRandI < 0) qspRandI = 54;
 	if (--qspRandJ < 0) qspRandJ = 54;
@@ -103,10 +107,10 @@ static unsigned int qspURand()
 
 int qspRand()
 {
-	int i = (int) qspRandZ >> 24;
+	int i = qspRandZ >> 24;
 	qspRandZ = qspRandY[i];
 	if (--qspRandI < 0) qspRandI = 54;
 	if (--qspRandJ < 0) qspRandJ = 54;
 	qspRandY[i] = qspRandX[qspRandJ] += qspRandX[qspRandI];
-	return (int) qspRandZ & QSP_RANDMASK;
+	return qspRandZ & QSP_RANDMASK;
 }

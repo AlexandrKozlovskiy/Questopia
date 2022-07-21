@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2010 Valeriy Argunov (nporep AT mail DOT ru) */
+/* Copyright (C) 2001-2020 Valeriy Argunov (byte AT qsp DOT org) */
 /*
 * This library is free software; you can redistribute it and/or modify
 * it under the terms of the GNU Lesser General Public License as published by
@@ -24,7 +24,6 @@
 	{
 		QSP_BOOL IsInCallBack;
 		QSP_BOOL IsDisableCodeExec;
-		QSP_BOOL IsExitOnError;
 		QSP_BOOL IsMainDescChanged;
 		QSP_BOOL IsVarsDescChanged;
 		QSP_BOOL IsObjectsChanged;
@@ -34,33 +33,32 @@
 	extern QSP_CALLBACK qspCallBacks[QSP_CALL_DUMMY];
 	extern QSP_BOOL qspIsInCallBack;
 	extern QSP_BOOL qspIsDisableCodeExec;
-	extern QSP_BOOL qspIsExitOnError;
 
 	/* External functions */
-	void qspSaveCallState(QSPCallState *, QSP_BOOL, QSP_BOOL);
-	void qspRestoreCallState(QSPCallState *);
+	void qspSaveCallState(QSPCallState *state, QSP_BOOL isDisableCodeExec);
+	void qspRestoreCallState(QSPCallState *state);
+
 	void qspInitCallBacks();
 	void qspSetCallBack(int, QSP_CALLBACK);
-	void qspCallDebug(QSP_CHAR *);
+
+	void qspCallDebug(QSPString str);
 	void qspCallSetTimer(int);
 	void qspCallRefreshInt(QSP_BOOL);
-	void qspCallSetInputStrText(QSP_CHAR *);
-	void qspCallAddMenuItem(QSP_CHAR *, QSP_CHAR *);
-	void qspCallSystem(QSP_CHAR *);
-	void qspCallOpenGame(QSP_CHAR *);
-	void qspCallSaveGame(QSP_CHAR *);
-	void qspCallShowMessage(QSP_CHAR *);
-	void qspCallShowMenu();
-	void qspCallShowPicture(QSP_CHAR *);
+	void qspCallSetInputStrText(QSPString text);
+	void qspCallShowMessage(QSPString text);
+	void qspCallShowPicture(QSPString file);
 	void qspCallShowWindow(int, QSP_BOOL);
-	void qspCallPlayFile(QSP_CHAR *, int);
-	QSP_BOOL qspCallIsPlayingFile(QSP_CHAR *);
+	void qspCallPlayFile(QSPString file, int volume);
+	QSP_BOOL qspCallIsPlayingFile(QSPString file);
+	void qspCallCloseFile(QSPString file);
+	void qspCallSystem(QSPString cmd);
 	void qspCallSleep(int);
 	int qspCallGetMSCount();
-	void qspCallCloseFile(QSP_CHAR *);
-	void qspCallDeleteMenu();
-	QSP_CHAR *qspCallInputBox(QSP_CHAR *);
-	char *qspCallGetFileContents(QSP_CHAR *, int *);
-	void qspCallChangeQuestPath(QSP_CHAR *);
+	void qspCallOpenGame(QSPString file, QSP_BOOL isNewGame);
+	void qspCallOpenGameStatus(QSPString file);
+	void qspCallSaveGameStatus(QSPString file);
+	QSPString qspCallInputBox(QSPString text);
+	int qspCallShowMenu(QSPListItem *items, int count);
+	QSPString qspCallVersion(QSPString param);
 
 #endif

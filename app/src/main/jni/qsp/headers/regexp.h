@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2010 Valeriy Argunov (nporep AT mail DOT ru) */
+/* Copyright (C) 2001-2020 Valeriy Argunov (byte AT qsp DOT org) */
 /*
 * This library is free software; you can redistribute it and/or modify
 * it under the terms of the GNU Lesser General Public License as published by
@@ -15,13 +15,24 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 */
 
-#ifndef QSP_BINDINGSCONFIG
-	#define QSP_BINDINGSCONFIG
+#include "declarations.h"
 
-	/* Android binding */
-	#ifdef _ANDROID
-		#define QSP_BINDING
-		#include "android/android.h"
-	#endif
+#ifndef QSP_REGEXPDEFINES
+#define QSP_REGEXPDEFINES
+
+#define QSP_MAXCACHEDREGEXPS 10
+
+typedef struct
+{
+    QSPString Text;
+    regex_t *CompiledExp;
+} QSPRegExp;
+
+/* External functions */
+void qspClearRegExps(QSP_BOOL);
+regex_t *qspRegExpGetCompiled(QSPString exp);
+QSP_BOOL qspRegExpStrMatch(regex_t *exp, QSPString str);
+QSPString qspRegExpStrFind(regex_t *exp, QSPString str, int ind);
+int qspRegExpStrPos(regex_t *exp, QSPString str, int ind);
 
 #endif

@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2010 Valeriy Argunov (nporep AT mail DOT ru) */
+/* Copyright (C) 2001-2020 Valeriy Argunov (byte AT qsp DOT org) */
 /*
 * This library is free software; you can redistribute it and/or modify
 * it under the terms of the GNU Lesser General Public License as published by
@@ -20,29 +20,43 @@
 #ifndef QSP_CODETOOLSDEFINES
 	#define QSP_CODETOOLSDEFINES
 
-	#define QSP_EOLEXT QSP_FMT(" _")
+	#define QSP_EOLEXT QSP_FMT("_")
+	#define QSP_PREEOLEXT QSP_FMT(" ")
 
 	typedef struct
 	{
-		int Stat;
+		int StartPos;
 		int EndPos;
+	} QSPCachedArg;
+
+	typedef struct
+	{
+		QSP_TINYINT Stat;
 		int ParamPos;
+		int EndPos;
+		QSPCachedArg *Args;
+		QSP_TINYINT ArgsCount;
+		int ErrorCode;
 	} QSPCachedStat;
 
 	typedef struct
 	{
-		QSP_CHAR *Str;
+		QSPString Str;
 		int LineNum;
 		QSP_BOOL IsMultiline;
-		QSP_CHAR *Label;
+		QSPString Label;
 		QSPCachedStat *Stats;
 		int StatsCount;
 	} QSPLineOfCode;
 
 	/* External functions */
+	QSPString qspGetLineLabel(QSPString str);
+	void qspInitLineOfCode(QSPLineOfCode *line, QSPString str, int lineNum);
+	void qspFreeLineOfCode(QSPLineOfCode *line);
 	void qspFreePrepLines(QSPLineOfCode *, int);
 	void qspCopyPrepLines(QSPLineOfCode **, QSPLineOfCode *, int, int);
-	QSP_CHAR *qspJoinPrepLines(QSPLineOfCode *, int, QSP_CHAR *);
-	int qspPreprocessData(QSP_CHAR *, QSPLineOfCode **);
+	QSPString qspJoinPrepLines(QSPLineOfCode *s, int count, QSPString delim);
+	void qspPrepareStringToExecution(QSPString *str);
+	int qspPreprocessData(QSPString data, QSPLineOfCode **strs);
 
 #endif

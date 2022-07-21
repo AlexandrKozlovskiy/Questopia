@@ -39,6 +39,8 @@ import static com.qsp.player.utils.StringUtil.isNotEmpty;
 import static com.qsp.player.utils.ThreadUtil.isSameThread;
 import static com.qsp.player.utils.ThreadUtil.throwIfNotMainThread;
 
+import androidx.annotation.NonNull;
+
 public class LibQspProxyImpl implements LibQspProxy, LibQspCallbacks {
     private static final Logger logger = LoggerFactory.getLogger(LibQspProxyImpl.class);
 
@@ -523,17 +525,6 @@ public class LibQspProxyImpl implements LibQspProxy, LibQspCallbacks {
         item.imgPath = imgPath;
         item.name = name;
         gameState.menuItems.add(item);
-    }
-
-    @Override
-    public void ShowMenu() {
-        GameInterface inter = gameInterface;
-        if (inter == null) return;
-
-        int result = inter.showMenu();
-        if (result != -1) {
-            nativeMethods.QSPSelectMenuItem(result);
-        }
     }
 
     @Override

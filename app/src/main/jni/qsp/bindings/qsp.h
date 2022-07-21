@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2010 Valeriy Argunov (nporep AT mail DOT ru) */
+/* Copyright (C) 2001-2020 Valeriy Argunov (byte AT qsp DOT org) */
 /*
 * This library is free software; you can redistribute it and/or modify
 * it under the terms of the GNU Lesser General Public License as published by
@@ -18,15 +18,26 @@
 #ifndef QSP_H
 	#define QSP_H
 
-	#ifdef EXPORT
-		#ifdef _WIN
-			#define QSP_EXTERN __declspec(dllexport)
-		#else
-			#define QSP_EXTERN extern
-		#endif
+	#if defined(EXPORT) && defined(_WIN32)
+	#if defined(_MSC_VER)
+            #define QSP_EXTERN __declspec(dllexport)
+        #elif defined(__GNUC__)
+            #define QSP_EXTERN __attribute__ ((dllexport))
+        #else
+            #define QSP_EXTERN extern
+        #endif
 	#else
 		#define QSP_EXTERN
 	#endif
+
+	/*
+	#ifdef EXPORT
+	#ifdef _WIN
+		#define QSP_EXTERN __declspec(dllexport)
+	#else
+		#define QSP_EXTERN extern
+	#endif
+	*/
 
 	enum
 	{
@@ -34,7 +45,6 @@
 		QSP_ERR_TYPEMISMATCH,
 		QSP_ERR_STACKOVERFLOW,
 		QSP_ERR_TOOMANYITEMS,
-		QSP_ERR_FILENOTFOUND,
 		QSP_ERR_CANTLOADFILE,
 		QSP_ERR_GAMENOTLOADED,
 		QSP_ERR_COLONNOTFOUND,
@@ -44,7 +54,7 @@
 		QSP_ERR_LOCNOTFOUND,
 		QSP_ERR_ENDNOTFOUND,
 		QSP_ERR_LABELNOTFOUND,
-		QSP_ERR_NOTCORRECTNAME,
+		QSP_ERR_INCORRECTNAME,
 		QSP_ERR_QUOTNOTFOUND,
 		QSP_ERR_BRACKNOTFOUND,
 		QSP_ERR_BRACKSNOTFOUND,
@@ -55,7 +65,8 @@
 		QSP_ERR_CANTADDMENUITEM,
 		QSP_ERR_TOOMANYVARS,
 		QSP_ERR_INCORRECTREGEXP,
-		QSP_ERR_CODENOTFOUND
+		QSP_ERR_CODENOTFOUND,
+		QSP_ERR_LOOPWHILENOTFOUND
 	};
 
 	enum
@@ -74,21 +85,33 @@
 		QSP_CALL_CLOSEFILE, /* void func(const QSP_CHAR *file) */
 		QSP_CALL_SHOWIMAGE, /* void func(const QSP_CHAR *file) */
 		QSP_CALL_SHOWWINDOW, /* void func(int type, QSP_BOOL isShow) */
-		QSP_CALL_DELETEMENU, /* void func() */
-		QSP_CALL_ADDMENUITEM, /* void func(const QSP_CHAR *name, const QSP_CHAR *imgPath) */
 		QSP_CALL_SHOWMENU, /* void func() */
 		QSP_CALL_SHOWMSGSTR, /* void func(const QSP_CHAR *str) */
 		QSP_CALL_REFRESHINT, /* void func(QSP_BOOL isRedraw) */
 		QSP_CALL_SETTIMER, /* void func(int msecs) */
 		QSP_CALL_SETINPUTSTRTEXT, /* void func(const QSP_CHAR *text) */
 		QSP_CALL_SYSTEM, /* void func(const QSP_CHAR *str) */
+		QSP_CALL_OPENGAME, /* void func(QSP_BOOL isNewGame) */
 		QSP_CALL_OPENGAMESTATUS, /* void func(const QSP_CHAR *file) */
 		QSP_CALL_SAVEGAMESTATUS, /* void func(const QSP_CHAR *file) */
 		QSP_CALL_SLEEP, /* void func(int msecs) */
 		QSP_CALL_GETMSCOUNT, /* int func() */
 		QSP_CALL_INPUTBOX, /* void func(const QSP_CHAR *text, QSP_CHAR *buffer, int maxLen) */
+		QSP_CALL_VERSION, /* void func(QSPString param, QSP_CHAR *buffer, int maxLen) */
 		QSP_CALL_DUMMY
 	};
+
+	typedef struct
+	{
+		QSP_CHAR *Str;
+		QSP_CHAR *End;
+	} QSPString;
+
+	typedef struct
+	{
+		QSPString Image;
+		QSPString Name;
+	} QSPListItem;
 
 	#ifdef _UNICODE
 		#define QSP_FMT2(x) L##x
@@ -98,6 +121,7 @@
 		#define QSP_FMT(x) x
 	#endif
 
+	typedef char QSP_TINYINT;
 	typedef int QSP_BOOL;
 
 	#define QSP_TRUE 1
