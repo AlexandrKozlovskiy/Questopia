@@ -39,6 +39,7 @@
 	/* External functions */
 	void qspSaveCallState(QSPCallState *, QSP_BOOL, QSP_BOOL);
 	void qspRestoreCallState(QSPCallState *);
+
 	void qspInitCallBacks();
 	void qspSetCallBack(int, QSP_CALLBACK);
 	void qspCallDebug(QSP_CHAR *);
@@ -50,7 +51,7 @@
 	void qspCallOpenGame(QSP_CHAR *);
 	void qspCallSaveGame(QSP_CHAR *);
 	void qspCallShowMessage(QSP_CHAR *);
-	void qspCallShowMenu();
+	int qspCallShowMenu();
 	void qspCallShowPicture(QSP_CHAR *);
 	void qspCallShowWindow(int, QSP_BOOL);
 	void qspCallPlayFile(QSP_CHAR *, int);
@@ -60,7 +61,5 @@
 	void qspCallCloseFile(QSP_CHAR *);
 	void qspCallDeleteMenu();
 	QSP_CHAR *qspCallInputBox(QSP_CHAR *);
-	char *qspCallGetFileContents(QSP_CHAR *, int *);
-	void qspCallChangeQuestPath(QSP_CHAR *);
 
 #endif

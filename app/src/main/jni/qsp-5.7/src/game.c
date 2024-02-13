@@ -27,7 +27,7 @@
 #include "playlist.h"
 #include "statements.h"
 #include "text.h"
-#include "time.h"
+#include "time_qsp.h"
 #include "variables.h"
 
 QSP_CHAR *qspQstPath = 0;
@@ -76,6 +76,7 @@ int qspCRCTable[256] =
 };
 
 static int qspCRC(void *, int);
+static void qspIncludeFile(QSP_CHAR *);
 static void qspOpenIncludes();
 static FILE *qspFileOpen(QSP_CHAR *, QSP_CHAR *);
 static QSP_BOOL qspCheckQuest(char **, int, QSP_BOOL);
@@ -93,9 +94,16 @@ static int qspCRC(void *data, int len)
 
 QSP_CHAR *qspGetAbsFromRelPath(QSP_CHAR *path)
 {
-	QSP_CHAR *absPath;
+    QSP_CHAR *absPath;
 	absPath = qspGetNewText(qspQstPath, qspQstPathLen);
-	return qspGetAddText(absPath, path, qspQstPathLen, -1);
+    return qspGetAddText(absPath, path, qspQstPathLen, -1);
+}
+
+QSP_CHAR *qspGetPathAsIs(QSP_CHAR *path)
+{
+    QSP_CHAR *newPath;
+    qspAddText(&newPath, path, 0, -1, QSP_TRUE);
+    return newPath;
 }
 
 void qspClearIncludes(QSP_BOOL isFirst)
@@ -114,6 +122,25 @@ void qspClearIncludes(QSP_BOOL isFirst)
 	}
 	qspCurIncFilesCount = 0;
 	qspCurIncLocsCount = 0;
+}
+
+static void qspIncludeFile(QSP_CHAR *s)
+{
+	QSP_CHAR *file;
+	int oldCurIncLocsCount;
+	if (!qspIsAnyString(s)) return;
+	if (qspCurIncFilesCount == QSP_MAXINCFILES)
+	{
+		qspSetError(QSP_ERR_CANTINCFILE);
+		return;
+	}
+	oldCurIncLocsCount = qspCurIncLocsCount;
+	file = qspGetAbsFromRelPath(s);
+	qspOpenQuest(file, QSP_TRUE);
+	free(file);
+	if (qspErrorNum) return;
+	if (qspCurIncLocsCount != oldCurIncLocsCount)
+		qspCurIncFiles[qspCurIncFilesCount++] = qspGetNewText(s, -1);
 }
 
 static void qspOpenIncludes()
@@ -160,8 +187,8 @@ static FILE *qspFileOpen(QSP_CHAR *fileName, QSP_CHAR *fileMode)
 {
 	FILE *ret;
 	char *file, *mode;
-	file = qspFromQSPString(fileName);
-	mode = qspFromQSPString(fileMode);
+	file = qspToSysString(fileName);
+	mode = qspToSysString(fileMode);
 	ret = fopen(file, mode);
 	free(file);
 	free(mode);
@@ -296,38 +323,42 @@ void qspOpenQuestFromData(char *data, int dataSize, QSP_CHAR *fileName, QSP_BOOL
 		qspQstPath = qspGetAddText(qspQstPath, qspQstFullPath, 0, qspQstPathLen);
 		qspQstCRC = crc;
 		qspCurLoc = -1;
-
-		// Notify application on quest path change
-		qspCallChangeQuestPath(qspQstPath);
 	}
 }
 
 void qspOpenQuest(QSP_CHAR *fileName, QSP_BOOL isAddLocs)
 {
+	FILE *f;
+	char *buf;
 	int fileSize;
-
-	char *data = qspCallGetFileContents(fileName, &fileSize);
-	if (!data) {
+	if (!(f = QSP_FOPEN(fileName, QSP_FMT("rb"))))
+	{
 		qspSetError(QSP_ERR_FILENOTFOUND);
 		return;
 	}
-
-	char *buf = (char *)malloc(fileSize + 3);
-	memcpy(buf, data, fileSize);
-	free(data);
-
+	fseek(f, 0, SEEK_END);
+	fileSize = ftell(f);
+	buf = (char *)malloc(fileSize + 3);
+	fseek(f, 0, SEEK_SET);
+	fread(buf, 1, fileSize, f);
+	fclose(f);
 	buf[fileSize] = buf[fileSize + 1] = buf[fileSize + 2] = 0;
-	qspOpenQuestFromData(buf, fileSize, fileName, isAddLocs);
+	qspOpenQuestFromData(buf, fileSize + 3, fileName, isAddLocs);
 	free(buf);
 }
 
 int qspSaveGameStatusToString(QSP_CHAR **buf)
 {
-	int i, j, len, oldRefreshCount = qspRefreshCount;
+	QSP_CHAR *locName;
+    QSPVar *savedVars;
+    int i, j, len, varsCount, oldRefreshCount = qspRefreshCount;
 	qspExecLocByVarNameWithArgs(QSP_FMT("ONGSAVE"), 0, 0);
 	if (qspRefreshCount != oldRefreshCount || qspErrorNum) return 0;
+    varsCount = qspPrepareLocalVars(&savedVars);
+    if (qspErrorNum) return 0;
 	*buf = 0;
 	qspRefreshPlayList();
+	locName = (qspCurLoc >= 0 ? qspLocs[qspCurLoc].Name : 0);
 	len = qspCodeWriteVal(buf, 0, QSP_SAVEDGAMEID, QSP_FALSE);
 	len = qspCodeWriteVal(buf, len, QSP_VER, QSP_FALSE);
 	len = qspCodeWriteIntVal(buf, len, qspQstCRC, QSP_TRUE);
@@ -338,7 +369,7 @@ int qspSaveGameStatusToString(QSP_CHAR **buf)
 	len = qspCodeWriteVal(buf, len, qspCurInput, QSP_TRUE);
 	len = qspCodeWriteVal(buf, len, qspCurDesc, QSP_TRUE);
 	len = qspCodeWriteVal(buf, len, qspCurVars, QSP_TRUE);
-	len = qspCodeWriteIntVal(buf, len, qspCurLoc, QSP_TRUE);
+	len = qspCodeWriteVal(buf, len, locName, QSP_TRUE);
 	len = qspCodeWriteIntVal(buf, len, (int)qspCurIsShowActs, QSP_TRUE);
 	len = qspCodeWriteIntVal(buf, len, (int)qspCurIsShowObjs, QSP_TRUE);
 	len = qspCodeWriteIntVal(buf, len, (int)qspCurIsShowVars, QSP_TRUE);
@@ -380,6 +411,7 @@ int qspSaveGameStatusToString(QSP_CHAR **buf)
 	}
 	len = qspCodeWriteIntVal(buf, len, qspGetVarsCount(), QSP_TRUE);
 	for (i = 0; i < QSP_VARSCOUNT; ++i)
+    {
 		if (qspVars[i].Name)
 		{
 			len = qspCodeWriteIntVal(buf, len, i, QSP_TRUE);
@@ -397,6 +429,13 @@ int qspSaveGameStatusToString(QSP_CHAR **buf)
 				len = qspCodeWriteVal(buf, len, qspVars[i].Indices[j].Str, QSP_TRUE);
 			}
 		}
+    }
+    qspRestoreLocalVars(savedVars, varsCount, qspSavedVarsGroups, qspSavedVarsGroupsCount);
+    if (qspErrorNum)
+    {
+        free(*buf);
+        return 0;
+    }
 	return len;
 }
 
@@ -430,7 +469,6 @@ static QSP_BOOL qspCheckGameStatus(QSP_CHAR **strs, int strsCount)
 		qspReCodeGetIntVal(strs[2]) != qspQstCRC) return QSP_FALSE;
 	selAction = qspReCodeGetIntVal(strs[4]);
 	selObject = qspReCodeGetIntVal(strs[5]);
-	if (qspReCodeGetIntVal(strs[10]) < 0) return QSP_FALSE;
 	if (qspReCodeGetIntVal(strs[15]) < 0) return QSP_FALSE;
 	temp = qspReCodeGetIntVal(strs[16]);
 	if (temp < 0 || temp > QSP_MAXPLFILES || (ind += temp) > strsCount) return QSP_FALSE;
@@ -485,7 +523,7 @@ static QSP_BOOL qspCheckGameStatus(QSP_CHAR **strs, int strsCount)
 void qspOpenGameStatusFromString(QSP_CHAR *str)
 {
 	int i, j, ind, count, varInd, varsCount, valsCount;
-	QSP_CHAR **strs, *file;
+	QSP_CHAR **strs, *file, *locName;
 	count = qspSplitStr(str, QSP_STRSDELIM, &strs);
 	if (!qspCheckGameStatus(strs, count))
 	{
@@ -503,7 +541,7 @@ void qspOpenGameStatusFromString(QSP_CHAR *str)
 	if (*strs[7]) qspCurInputLen = qspStrLen(qspCurInput = qspCodeReCode(strs[7], QSP_FALSE));
 	if (*strs[8]) qspCurDescLen = qspStrLen(qspCurDesc = qspCodeReCode(strs[8], QSP_FALSE));
 	if (*strs[9]) qspCurVarsLen = qspStrLen(qspCurVars = qspCodeReCode(strs[9], QSP_FALSE));
-	qspCurLoc = qspReCodeGetIntVal(strs[10]);
+	locName = qspCodeReCode(strs[10], QSP_FALSE);
 	qspCurIsShowActs = qspReCodeGetIntVal(strs[11]) != 0;
 	qspCurIsShowObjs = qspReCodeGetIntVal(strs[12]) != 0;
 	qspCurIsShowVars = qspReCodeGetIntVal(strs[13]) != 0;
@@ -522,7 +560,7 @@ void qspOpenGameStatusFromString(QSP_CHAR *str)
 		if (*strs[ind])
 		{
 			str = qspCodeReCode(strs[ind], QSP_FALSE);
-			qspCurActions[i].Image = qspGetAbsFromRelPath(str);
+            qspCurActions[i].Image = qspGetPathAsIs(str);
 			free(str);
 		}
 		else
@@ -552,7 +590,7 @@ void qspOpenGameStatusFromString(QSP_CHAR *str)
 		if (*strs[ind])
 		{
 			str = qspCodeReCode(strs[ind], QSP_FALSE);
-			qspCurObjects[i].Image = qspGetAbsFromRelPath(str);
+            qspCurObjects[i].Image = qspGetPathAsIs(str);
 			free(str);
 		}
 		else
@@ -592,7 +630,8 @@ void qspOpenGameStatusFromString(QSP_CHAR *str)
 	qspFreeStrs(strs, count);
 	qspIsMainDescChanged = qspIsVarsDescChanged = qspIsObjectsChanged = qspIsActionsChanged = QSP_TRUE;
 	qspOpenIncludes();
-	if (qspCurLoc >= qspLocsCount) qspCurLoc = -1;
+	qspCurLoc = qspLocIndex(locName);
+	free(locName);
 	if (qspErrorNum) return;
 	qspCallShowWindow(QSP_WIN_ACTS, qspCurIsShowActs);
 	qspCallShowWindow(QSP_WIN_OBJS, qspCurIsShowObjs);
@@ -601,7 +640,7 @@ void qspOpenGameStatusFromString(QSP_CHAR *str)
 	qspCallSetInputStrText(qspCurInput);
 	if (qspViewPath)
 	{
-		file = qspGetAbsFromRelPath(qspViewPath);
+        file = qspGetPathAsIs(qspViewPath);
 		qspCallShowPicture(file);
 		free(file);
 	}
@@ -636,31 +675,21 @@ void qspOpenGameStatus(QSP_CHAR *fileName)
 
 QSP_BOOL qspStatementOpenQst(QSPVariant *args, int count, QSP_CHAR **jumpTo, int extArg)
 {
-	int oldCurIncLocsCount;
 	QSP_CHAR *file;
-	if (!qspIsAnyString(QSP_STR(args[0]))) return QSP_FALSE;
 	switch (extArg)
 	{
 	case 0:
-		file = qspGetAbsFromRelPath(QSP_STR(args[0]));
-		qspOpenQuest(file, QSP_FALSE);
-		free(file);
-		if (qspErrorNum) return QSP_FALSE;
-		qspNewGame(QSP_FALSE);
+		if (qspIsAnyString(QSP_STR(args[0])))
+		{
+			file = qspGetAbsFromRelPath(QSP_STR(args[0]));
+			qspOpenQuest(file, QSP_FALSE);
+			free(file);
+			if (qspErrorNum) return QSP_FALSE;
+			qspNewGame(QSP_FALSE);
+		}
 		break;
 	case 1:
-		if (qspCurIncFilesCount == QSP_MAXINCFILES)
-		{
-			qspSetError(QSP_ERR_CANTINCFILE);
-			return QSP_FALSE;
-		}
-		oldCurIncLocsCount = qspCurIncLocsCount;
-		file = qspGetAbsFromRelPath(QSP_STR(args[0]));
-		qspOpenQuest(file, QSP_TRUE);
-		free(file);
-		if (qspErrorNum) return QSP_FALSE;
-		if (qspCurIncLocsCount != oldCurIncLocsCount)
-			qspCurIncFiles[qspCurIncFilesCount++] = qspGetNewText(QSP_STR(args[0]), -1);
+		qspIncludeFile(QSP_STR(args[0]));
 		break;
 	}
 	return QSP_FALSE;

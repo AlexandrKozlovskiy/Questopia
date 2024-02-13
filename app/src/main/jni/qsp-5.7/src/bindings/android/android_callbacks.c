@@ -215,23 +215,27 @@ void qspCallShowMessage(QSP_CHAR *text)
 	qspRestoreCallState(&state);
 }
 
-void qspCallShowMenu()
+int qspCallShowMenu()
 {
 	QSPCallState state;
 
 	qspSaveCallState(&state, QSP_FALSE, QSP_TRUE);
 	
-	jclass cls = (*qspJniEnv)->GetObjectClass(qspJniEnv, qspCallbacksObj);
-	jmethodID mid = 
-		 (*qspJniEnv)->GetMethodID(qspJniEnv, cls, "ShowMenu", "()V");
-	(*qspJniEnv)->DeleteLocalRef(qspJniEnv, cls );
-	if (mid == NULL)
-		return; /* method not found */
+	int index = -1;
+	
+    jclass cls = (*qspJniEnv)->GetObjectClass(qspJniEnv, qspCallbacksObj);
+    jmethodID mid = 
+         (*qspJniEnv)->GetMethodID(qspJniEnv, cls, "ShowMenu", "()I");
+	(*qspJniEnv)->DeleteLocalRef( qspJniEnv, cls );
+    if (mid == NULL)
+        return -1; /* method not found */
 
-	(*qspJniEnv)->CallVoidMethod(qspJniEnv, qspCallbacksObj, mid);
+    index = (*qspJniEnv)->CallIntMethod(qspJniEnv, qspCallbacksObj, mid);
 	
 	
 	qspRestoreCallState(&state);
+	
+	return index;
 }
 
 void qspCallShowPicture(QSP_CHAR *file)
@@ -260,17 +264,12 @@ void qspCallShowPicture(QSP_CHAR *file)
 void qspCallShowWindow(int type, QSP_BOOL isShow)
 {
 	QSPCallState state;
-	qspSaveCallState(&state, QSP_FALSE, QSP_FALSE);
-
-	jclass cls = (*qspJniEnv)->GetObjectClass(qspJniEnv, qspCallbacksObj);
-	jmethodID mid = (*qspJniEnv)->GetMethodID(qspJniEnv, cls, "ShowWindow", "(IZ)V");
-	(*qspJniEnv)->DeleteLocalRef(qspJniEnv, cls);
-
-	if (mid == NULL) return;
-
-	(*qspJniEnv)->CallVoidMethod(qspJniEnv, qspCallbacksObj, mid, type, isShow);
-
-	qspRestoreCallState(&state);
+	if (qspCallBacks[QSP_CALL_SHOWWINDOW])
+	{
+		qspSaveCallState(&state, QSP_TRUE, QSP_FALSE);
+		qspCallBacks[QSP_CALL_SHOWWINDOW](type, isShow);
+		qspRestoreCallState(&state);
+	}
 }
 
 void qspCallPlayFile(QSP_CHAR *file, int volume)
@@ -437,54 +436,6 @@ QSP_CHAR *qspCallInputBox(QSP_CHAR *text)
 	(*qspJniEnv)->DeleteLocalRef(qspJniEnv, jText );
 	qspRestoreCallState(&state);
 	return buffer;
-}
-
-char *qspCallGetFileContents(QSP_CHAR *fileName, int *filesize) {
-	// Get GetFileContents method
-	jclass cls = (*qspJniEnv)->GetObjectClass(qspJniEnv, qspCallbacksObj);
-	jmethodID mid = (*qspJniEnv)->GetMethodID(qspJniEnv, cls, "GetFileContents", "(Ljava/lang/String;)[B");
-	(*qspJniEnv)->DeleteLocalRef(qspJniEnv, cls);
-
-	// Convert QSP file name to Java
-	char *cFileName = qspW2C(fileName);
-	jstring javaFileName = (*qspJniEnv)->NewStringUTF(qspJniEnv, cFileName);
-	free(cFileName);
-
-	// Call GetFileContents
-	jbyteArray byteArray = (jbyteArray)(*qspJniEnv)->CallObjectMethod(qspJniEnv, qspCallbacksObj, mid, javaFileName);
-	(*qspJniEnv)->DeleteLocalRef(qspJniEnv, javaFileName);
-	if (!byteArray) return NULL;
-
-	// Copy file contents into a new buffer
-	jboolean isCopy;
-	jbyte *data = (*qspJniEnv)->GetByteArrayElements(qspJniEnv, byteArray, &isCopy);
-	jsize byteArrayLen = (*qspJniEnv)->GetArrayLength(qspJniEnv, byteArray);
-	char *result = (char *)malloc(byteArrayLen);
-	memcpy(result, data, byteArrayLen);
-	(*qspJniEnv)->ReleaseByteArrayElements(qspJniEnv, byteArray, data, JNI_ABORT);
-
-	// Set file size
-	if (filesize) {
-		*filesize = byteArrayLen;
-	}
-
-	return result;
-}
-
-void qspCallChangeQuestPath(QSP_CHAR *path) {
-	// Get ChangeQuestPath method
-	jclass cls = (*qspJniEnv)->GetObjectClass(qspJniEnv, qspCallbacksObj);
-	jmethodID mid = (*qspJniEnv)->GetMethodID(qspJniEnv, cls, "ChangeQuestPath", "(Ljava/lang/String;)V");
-	(*qspJniEnv)->DeleteLocalRef(qspJniEnv, cls);
-
-	// Convert QSP path to Java
-	char *cPath = qspW2C(path);
-	jstring javaPath = (*qspJniEnv)->NewStringUTF(qspJniEnv, cPath);
-	free(cPath);
-
-	// Call ChangeQuestPath
-	(*qspJniEnv)->CallVoidMethod(qspJniEnv, qspCallbacksObj, mid, javaPath);
-	(*qspJniEnv)->DeleteLocalRef(qspJniEnv, javaPath);
 }
 
 #endif
