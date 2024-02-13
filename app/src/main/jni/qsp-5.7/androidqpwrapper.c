@@ -636,7 +636,7 @@ jboolean Java_org_qp_android_model_libQP_NativeMethods_QSPRestartGame(JNIEnv *en
 void Java_org_qp_android_model_libQP_NativeMethods_QSPSelectMenuItem(JNIEnv *env,
 																	 jobject this,
 																	 jint ind) {
-  QSPSelectMenuItem(ind);
+  // QSPSelectMenuItem(ind);
 }
 ///* ------------------------------------------------------------ */
 ///* Installing CALLBACKS */

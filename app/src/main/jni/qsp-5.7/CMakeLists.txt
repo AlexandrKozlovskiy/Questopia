@@ -3,7 +3,7 @@ project(ndkqsp)
 
 include_directories( ../onig )
 
-set_property(TARGET ${TARGET_NAME} PROPERTY C_STANDARD 17)
+set_property(TARGET ${TARGET_NAME} PROPERTY C_STANDARD 11)
 
 # -fPIC
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -25,7 +25,7 @@ set(QSP_SOURCES
         src/playlist.c
         src/statements.c
         src/text.c
-        src/time.c
+        src/time_qsp.c
         src/towlower.c
         src/towupper.c
         src/variables.c
@@ -35,7 +35,7 @@ set(QSP_SOURCES
         src/bindings/android/android_control.c
 )
 
-add_definitions( -fshort-wchar -D_ANDROID -D_UNICODE -DNOT_RUBY -DEXPORT -w )
+add_definitions( -D_ANDROID -D_UNICODE -DNOT_RUBY -DEXPORT -w )
 
 add_library( ndkqsp SHARED ${QSP_SOURCES} )
 

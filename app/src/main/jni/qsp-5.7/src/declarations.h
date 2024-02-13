@@ -15,6 +15,9 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 */
 
+#ifndef DECLARATIONS_H
+#define DECLARATIONS_H
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -22,12 +25,17 @@
 #include <time.h>
 #include <limits.h>
 #include <string.h>
-#include <wchar.h>
-#include <wctype.h>
+#ifdef __APPLE__
+#include <stddef.h>
+#include <stdint.h>
+typedef uint16_t char16_t;
+#else
+#include <uchar.h>
+#endif
 
 /* MEMWATCH */
 
-#ifdef _DEBUG
+#ifdef _DEBUGMW
 	#define MEMWATCH
 	#define MEMWATCH_STDIO
 
@@ -37,10 +45,13 @@
 /* -------- */
 
 #include "bindings/bindings_config.h"
+#include "qsp.h"
 #include <oniguruma.h>
 
 #ifndef QSP_DEFINES
 	#define QSP_DEFINES
+
+	static int qspEndiannessTestValue = 1;
 
 	#ifdef _UNICODE
 		#ifdef _MSC_VER
@@ -51,19 +62,15 @@
 		#define QSP_STRCOLL qspStrsComp
 		#define QSP_CHRLWR qspToWLower
 		#define QSP_CHRUPR qspToWUpper
-		#define QSP_WCSTOMBSLEN(a) (int)wcstombs(0, a, 0)
-		#define QSP_WCSTOMBS wcstombs
-		#define QSP_MBTOSB(a) ((a) % 256)
-		#define QSP_ONIG_ENC (sizeof(QSP_CHAR) == 2 ? ONIG_ENCODING_UTF16_LE : ONIG_ENCODING_UTF32_LE)
+		#define QSP_ONIG_ENC ((*(char *)&(qspEndiannessTestValue) == 1) ? \
+			(sizeof(QSP_CHAR) == 2 ? ONIG_ENCODING_UTF16_LE : ONIG_ENCODING_UTF32_LE) : \
+			(sizeof(QSP_CHAR) == 2 ? ONIG_ENCODING_UTF16_BE : ONIG_ENCODING_UTF32_BE))
 		#define QSP_FROM_OS_CHAR(a) qspReverseConvertUC(a, qspCP1251ToUnicodeTable)
 		#define QSP_TO_OS_CHAR(a) qspDirectConvertUC(a, qspCP1251ToUnicodeTable)
 		#define QSP_WCTOB
 		#define QSP_BTOWC
 	#else
 		#define QSP_FOPEN fopen
-		#define QSP_WCSTOMBSLEN qspStrLen
-		#define QSP_WCSTOMBS qspStrNCopy
-		#define QSP_MBTOSB(a) ((unsigned char)(a))
 		#if defined(_WIN) || defined(_PSP)
 			#define QSP_FROM_OS_CHAR
 			#define QSP_TO_OS_CHAR
@@ -84,6 +91,9 @@
 			#define QSP_ONIG_ENC ONIG_ENCODING_KOI8_R
 		#endif
 	#endif
+	#define QSP_FIXBYTESORDER(a) ((*(char *)&(qspEndiannessTestValue) == 1) ? \
+		(a) : \
+		((unsigned short)(((a) << 8) | ((a) >> 8))))
 	#ifdef _MSC_VER
 		#define QSP_TIME _time64
 	#else
@@ -130,3 +140,5 @@
 	#define QSP_DELIMS QSP_FMT(" \t&'\"()[]=!<>+-/*:,{}")
 
 #endif
+
+#endif // DECLARATIONS_H
